@@ -182,7 +182,7 @@ public class MainActivity extends Activity {
         Button profileButton = new Button(this);
         profileButton.setText("Deco-Analyseprofil einstellen");
         
-        profileButton.setOnClickListener(v -> { setActiveAction(profileButton, profileButton, scan, optimize, channelsButton); showAnalysisProfile(); });
+
         Button scan = new Button(this);
         scan.setText("WLAN jetzt messen");
         
@@ -323,6 +323,7 @@ public class MainActivity extends Activity {
             report.setText("Vorheriger Absturz:\n" + lastCrash);
             getSharedPreferences("diagnostics", MODE_PRIVATE).edit().remove("lastCrash").apply();
         }
+        profileButton.setOnClickListener(v -> { setActiveAction(profileButton, profileButton, scan, optimize, channelsButton); showAnalysisProfile(); });
         setActiveAction(scan, profileButton, scan, optimize, channelsButton);
         scan.setOnClickListener(v -> {
             setActiveAction(scan, profileButton, scan, optimize, channelsButton);

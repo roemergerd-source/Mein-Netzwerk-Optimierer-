@@ -93,13 +93,15 @@ public class MainActivity extends Activity {
         Button settings = new Button(this);
         settings.setText("WLAN-Einstellungen öffnen");
         root.addView(settings);
-        ScrollView scroll = new ScrollView(this);
         report = new TextView(this);
         report.setTextSize(16); report.setTextColor(Color.rgb(25,35,45));
         report.setPadding(0,20,0,20);
         report.setText("Tippe auf „WLAN analysieren“. Für die Anzeige benachbarter Netze sind Standortberechtigung und aktivierte Standortdienste erforderlich.");
-        scroll.addView(report); root.addView(scroll);
-        setContentView(root);
+        root.addView(report);
+        ScrollView page = new ScrollView(this);
+        page.setFillViewport(true);
+        page.addView(root);
+        setContentView(page);
         String lastCrash = getSharedPreferences("diagnostics", MODE_PRIVATE).getString("lastCrash", null);
         if (lastCrash != null) {
             report.setText("Vorheriger Absturz:\n" + lastCrash);
@@ -357,6 +359,9 @@ public class MainActivity extends Activity {
             out.append("Jüngster Scan-Eintrag: vor ca. ").append(ageSeconds).append(" Sekunden\n");
         }
         out.append("Scan angefordert: ").append(requested ? "ja (Ergebnisse können älter sein)" : "nein / durch Android begrenzt").append("\n");
+        SharedPreferences profile = getSharedPreferences("analysis_profile", MODE_PRIVATE);
+        out.append("Dokumentierte Deco-Bandbreite: 2,4 GHz ").append(profile.getString("w24", "20 MHz"))
+            .append("; 5 GHz ").append(profile.getString("w5", "160 MHz")).append("\n");
         out.append("Kanalbelegung (Zugangspunkte):\n");
         for (Map.Entry<Integer,Integer> e : channels.entrySet())
             out.append("Kanal ").append(e.getKey()).append(": ").append(e.getValue()).append("\n");
@@ -435,10 +440,12 @@ public class MainActivity extends Activity {
             out.append("Messungen: ").append(prefs.getInt(key + "count", 0)).append("\n");
             out.append("Letzte Messung: ").append(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(prefs.getLong(key + "time", 0)))).append("\n\n");
         }
-        if (bssids[0] != null && bssids[1] != null && bssids[2] != null) {
-            Set<String> distinct = new HashSet<>(Arrays.asList(bssids));
-            out.append("Unterschiedliche verbundene BSSIDs: ").append(distinct.size()).append(" von 3 Messorten.\n");
-            if (distinct.size() == 1) out.append("Alle drei Messungen zeigen denselben Zugangspunkt. Das kann auf fehlenden Wechsel des Handys zwischen Deco-Funkmodulen hindeuten.\n");
+        int measuredPlaces = 0;
+        Set<String> measuredBssids = new HashSet<>();
+        for (String bssid : bssids) if (bssid != null) { measuredPlaces++; measuredBssids.add(bssid); }
+        if (measuredPlaces > 1) {
+            out.append("Unterschiedliche verbundene BSSIDs: ").append(measuredBssids.size()).append(" von ").append(measuredPlaces).append(" Messorten.\n");
+            if (measuredBssids.size() == 1) out.append("Die Messungen zeigen denselben Zugangspunkt. Das kann auf fehlenden Wechsel des Handys zwischen Deco-Funkmodulen hindeuten.\n");
         }
         out.append("\nHinweis: Gespeichert wird jeweils die letzte Messung pro ausgewähltem Messort. Die Etage wird manuell ausgewählt. BSSID identifiziert ein Funkmodul, nicht zwingend ein ganzes Deco-Gerät. WLAN-Linkrate ist kein Internet-Speedtest.");
         report.setText(out.toString());

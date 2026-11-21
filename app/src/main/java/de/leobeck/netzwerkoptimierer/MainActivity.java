@@ -59,13 +59,12 @@ public class MainActivity extends Activity {
 
     private void addGridButton(android.widget.GridLayout grid, Button button, int row, int column, int color) {
         float density = getResources().getDisplayMetrics().density;
-        int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        int cellWidth = (screenWidth - (int)(60 * density)) / 2;
+        int cellWidth = 0;
         button.setAllCaps(false);
-        button.setTextSize(15);
+        button.setTextSize(14);
         button.setTextColor(Color.WHITE);
         button.setGravity(android.view.Gravity.CENTER);
-        button.setMaxLines(3);
+        button.setMaxLines(4);
         button.setIncludeFontPadding(false);
         button.setMinHeight(0);
         button.setMinimumHeight(0);
@@ -77,8 +76,9 @@ public class MainActivity extends Activity {
         android.widget.GridLayout.LayoutParams params = new android.widget.GridLayout.LayoutParams(
             android.widget.GridLayout.spec(row, android.widget.GridLayout.FILL), android.widget.GridLayout.spec(column, android.widget.GridLayout.FILL));
         params.setGravity(android.view.Gravity.FILL);
-        params.width = cellWidth;
-        params.height = (int)(92 * density);
+        params.width = 0;
+        params.height = (int)(104 * density);
+        params.columnSpec = android.widget.GridLayout.spec(column, 1f);
         params.setMargins((int)(3*density), (int)(5*density), (int)(3*density), (int)(5*density));
         grid.addView(button, params);
     }
@@ -94,10 +94,10 @@ public class MainActivity extends Activity {
             android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
             bg.setColor(colors[i]);
             bg.setCornerRadius(4 * density);
-            bg.setStroke((int)((selected ? 4 : 1) * density), selected ? Color.WHITE : colors[i]);
+            bg.setStroke((int)((selected ? 3 : 1) * density), selected ? Color.YELLOW : Color.rgb(80, 100, 120));
             button.setBackground(bg);
             button.setText((selected ? "✓ AKTIV\n" : "") + labels[i]);
-            button.setTextSize(selected ? 14 : 15);
+            button.setTextSize(14);
             button.setSelected(selected);
         }
     }
@@ -112,12 +112,14 @@ public class MainActivity extends Activity {
         return lamp;
     }
 
+    private int dp(float value) { return (int)(value * getResources().getDisplayMetrics().density + 0.5f); }
+
     private void initializeUi() {
         wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setFitsSystemWindows(true);
-        root.setPadding(22, 28, 22, 56);
+        root.setFitsSystemWindows(false);
+        root.setPadding(dp(16), dp(16), dp(16), dp(36));
         root.setBackgroundColor(Color.rgb(12, 22, 37));
         TextView title = new TextView(this);
         title.setText("Mein Netzwerk-Optimierer");
@@ -128,7 +130,7 @@ public class MainActivity extends Activity {
         info.setTextColor(Color.rgb(175, 198, 224));
         info.setPadding(0,12,0,8); root.addView(info);
         TextView buildLabel = new TextView(this);
-        buildLabel.setText("Version 2.5 · Lesbarkeit & aktive Analyse");
+        buildLabel.setText("Version 2.6 · Oberfläche überarbeitet");
         buildLabel.setTextSize(12);
         buildLabel.setTextColor(Color.rgb(119, 186, 255));
         buildLabel.setPadding(0, 0, 0, 14);
@@ -231,11 +233,11 @@ public class MainActivity extends Activity {
         decoButton.setText("Deco-App öffnen (manuelle Einstellungen)");
         addCompactButton(advancedPanel, decoButton);
         Button baseline = new Button(this);
-        baseline.setText("Vergleich: Ausgangsmessung speichern");
-        addCompactButton(advancedPanel, baseline);
+        baseline.setText("Messung vor Optimierung speichern");
+        addCompactButton(root, baseline);
         Button after = new Button(this);
-        after.setText("Vergleich: Neue Messung auswerten");
-        addCompactButton(advancedPanel, after);
+        after.setText("Messung nach Optimierung vergleichen");
+        addCompactButton(root, after);
         Button compare = new Button(this);
         compare.setText("Messorte vergleichen");
         addCompactButton(advancedPanel, compare);
@@ -315,8 +317,11 @@ public class MainActivity extends Activity {
         page.setHorizontalScrollBarEnabled(false);
         page.setOverScrollMode(View.OVER_SCROLL_NEVER);
         page.setClipToPadding(false);
-        page.setPadding(0, 0, 0, 48);
+        page.setPadding(0, 0, 0, dp(24));
         page.addView(root);
+        getWindow().setStatusBarColor(Color.rgb(12,22,37));
+        getWindow().setNavigationBarColor(Color.rgb(12,22,37));
+        getWindow().getDecorView().setSystemUiVisibility(0);
         setContentView(page);
         String lastCrash = getSharedPreferences("diagnostics", MODE_PRIVATE).getString("lastCrash", null);
         if (lastCrash != null) {

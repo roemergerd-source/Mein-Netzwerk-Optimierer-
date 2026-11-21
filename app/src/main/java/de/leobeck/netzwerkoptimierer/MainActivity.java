@@ -230,10 +230,10 @@ public class MainActivity extends Activity {
             .putInt("frequency", info.getFrequency())
             .putString("bssid", info.getBSSID())
             .putLong("time", System.currentTimeMillis()).apply();
-        report.setText("VORHER-MESSUNG GESPEICHERT\\n\\nMessort: " + floor
-            + "\\nSignal: " + info.getRssi() + " dBm"
-            + "\\nLinkrate: " + info.getLinkSpeed() + " Mbit/s"
-            + "\\n\\nJetzt in der Deco-App die Netzwerkoptimierung ausfuehren, danach am GLEICHEN Ort erneut messen. Die Linkrate ist kein Internet-Speedtest.");
+        report.setText("VORHER-MESSUNG GESPEICHERT\n\nMessort: " + floor
+            + "\nSignal: " + info.getRssi() + " dBm"
+            + "\nLinkrate: " + info.getLinkSpeed() + " Mbit/s"
+            + "\n\nJetzt in der Deco-App die Netzwerkoptimierung ausfuehren, danach am GLEICHEN Ort erneut messen. Die Linkrate ist kein Internet-Speedtest.");
     }
 
     @SuppressWarnings("deprecation")
@@ -266,17 +266,17 @@ public class MainActivity extends Activity {
         int rateBefore = prefs.getInt("rate", 0), rateAfter = now.getLinkSpeed();
         int delta = after - before;
         String verdict = delta >= 6 ? "Empfang deutlich staerker" : delta <= -6 ? "Empfang deutlich schwaecher" : "Empfang etwa gleich (Messschwankungen moeglich)";
-        StringBuilder out = new StringBuilder("DECO-OPTIMIERUNG: VORHER / NACHHER\\n\\n");
-        out.append("Messort: ").append(floor).append("\\n");
-        out.append("Signal vorher: ").append(before).append(" dBm\\n");
-        out.append("Signal nachher: ").append(after).append(" dBm\\n");
-        out.append("Differenz: ").append(delta > 0 ? "+" : "").append(delta).append(" dB\\n");
-        out.append("Bewertung: ").append(verdict).append("\\n\\n");
-        out.append("Linkrate vorher: ").append(rateBefore).append(" Mbit/s\\n");
-        out.append("Linkrate nachher: ").append(rateAfter).append(" Mbit/s\\n");
-        out.append("Frequenz vorher/nachher: ").append(prefs.getInt("frequency", 0)).append(" / ").append(now.getFrequency()).append(" MHz\\n");
-        out.append("BSSID vorher: ").append(prefs.getString("bssid", "?")).append("\\n");
-        out.append("BSSID nachher: ").append(now.getBSSID()).append("\\n\\n");
+        StringBuilder out = new StringBuilder("DECO-OPTIMIERUNG: VORHER / NACHHER\n\n");
+        out.append("Messort: ").append(floor).append("\n");
+        out.append("Signal vorher: ").append(before).append(" dBm\n");
+        out.append("Signal nachher: ").append(after).append(" dBm\n");
+        out.append("Differenz: ").append(delta > 0 ? "+" : "").append(delta).append(" dB\n");
+        out.append("Bewertung: ").append(verdict).append("\n\n");
+        out.append("Linkrate vorher: ").append(rateBefore).append(" Mbit/s\n");
+        out.append("Linkrate nachher: ").append(rateAfter).append(" Mbit/s\n");
+        out.append("Frequenz vorher/nachher: ").append(prefs.getInt("frequency", 0)).append(" / ").append(now.getFrequency()).append(" MHz\n");
+        out.append("BSSID vorher: ").append(prefs.getString("bssid", "?")).append("\n");
+        out.append("BSSID nachher: ").append(now.getBSSID()).append("\n\n");
         out.append("WICHTIG: Der Vergleich zeigt nur die Funkverbindung des Handys. Ein anderer Zugangspunkt, Bewegung, wechselnde Last und Messschwankungen koennen die Werte beeinflussen. Eine tatsaechliche Deco-Kanaloptimierung wird dadurch nicht nachgewiesen.");
         report.setText(out.toString());
     }

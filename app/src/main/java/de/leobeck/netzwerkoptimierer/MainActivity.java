@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
         info.setTextColor(Color.rgb(175, 198, 224));
         info.setPadding(0,12,0,8); root.addView(info);
         TextView buildLabel = new TextView(this);
-        buildLabel.setText("Version 2.3 · Finale Oberfläche");
+        buildLabel.setText("Version 2.4 · Messampel");
         buildLabel.setTextSize(12);
         buildLabel.setTextColor(Color.rgb(119, 186, 255));
         buildLabel.setPadding(0, 0, 0, 14);
@@ -238,7 +238,29 @@ public class MainActivity extends Activity {
         reportTitle.setTextColor(Color.rgb(119, 186, 255));
         reportTitle.setPadding(0,20,0,0);
         root.addView(reportTitle);
+        TextView resultLamp = new TextView(this);
+        resultLamp.setText("● Noch keine Messung");
+        resultLamp.setTextSize(23);
+        resultLamp.setTypeface(null, android.graphics.Typeface.BOLD);
+        resultLamp.setTextColor(Color.WHITE);
+        resultLamp.setPadding(12, 18, 12, 18);
+        root.addView(resultLamp);
+        TextView summary = new TextView(this);
+        summary.setText("Nach der Messung: Signal, Frequenz und Linkrate.");
+        summary.setTextColor(Color.WHITE);
+        summary.setTextSize(17);
+        summary.setPadding(8, 12, 8, 18);
+        root.addView(summary);
+        Button details = new Button(this);
+        details.setText("Technische Details anzeigen ▼");
+        addCompactButton(root, details);
+        report.setVisibility(View.GONE);
         root.addView(report);
+        details.setOnClickListener(v -> {
+            boolean show = report.getVisibility() != View.VISIBLE;
+            report.setVisibility(show ? View.VISIBLE : View.GONE);
+            details.setText(show ? "Technische Details schließen ▲" : "Technische Details anzeigen ▼");
+        });
         report.addTextChangedListener(new android.text.TextWatcher() {
             public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
             public void onTextChanged(CharSequence text, int start, int before, int count) {
@@ -248,11 +270,19 @@ public class MainActivity extends Activity {
                         int dbm = Integer.parseInt(matcher.group(1));
                         String grade = dbm >= -55 ? "GRÜN · Sehr gut" : dbm >= -67 ? "GRÜN · Gut" : dbm >= -75 ? "GELB · Mittel" : "ROT · Schwach";
                         signalStatus.setText("WLAN-Ampel: " + grade + " (" + dbm + " dBm)");
+                        resultLamp.setText("● " + grade + " · " + dbm + " dBm");
+                        resultLamp.setTextColor(dbm >= -67 ? Color.rgb(76,220,142) : dbm >= -75 ? Color.rgb(255,203,77) : Color.rgb(255,102,102));
+                        java.util.regex.Matcher fm = java.util.regex.Pattern.compile("Frequenz: (\\d+) MHz").matcher(text);
+                        java.util.regex.Matcher lm = java.util.regex.Pattern.compile("Linkrate: (\\d+) Mbit/s").matcher(text);
+                        summary.setText("Signal: " + dbm + " dBm\nFrequenz: " + (fm.find() ? fm.group(1) + " MHz" : "–") + "\nLinkrate: " + (lm.find() ? lm.group(1) + " Mbit/s" : "–") + "\nLinkrate ist kein Internet-Speedtest.");
                         signalStatus.setTextColor(dbm >= -67 ? Color.rgb(76, 220, 142) : dbm >= -75 ? Color.rgb(255, 203, 77) : Color.rgb(255, 102, 102));
                     } catch (NumberFormatException ignored) {}
                 } else {
                     signalStatus.setText("WLAN-Ampel: Noch keine aktuelle Messung");
                     signalStatus.setTextColor(Color.WHITE);
+                    resultLamp.setText("● Noch keine Messung");
+                    resultLamp.setTextColor(Color.WHITE);
+                    summary.setText("Nach der Messung: Signal, Frequenz und Linkrate.");
                 }
             }
             public void afterTextChanged(android.text.Editable text) {}

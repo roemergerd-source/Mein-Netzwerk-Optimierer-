@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
         wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setFitsSystemWindows(true);
         root.setPadding(28, 32, 28, 24);
         root.setBackgroundColor(Color.rgb(245,248,252));
         TextView title = new TextView(this);
@@ -83,6 +84,10 @@ public class MainActivity extends Activity {
         Button protocolButton = new Button(this);
         protocolButton.setText("Erweiterte Diagnose: Deco-Ports prüfen");
         root.addView(protocolButton);
+        Button directButton = new Button(this);
+        directButton.setText("Deco-Direktsteuerung: Kompatibilität prüfen");
+        root.addView(directButton);
+        directButton.setOnClickListener(v -> showDecoControlCompatibility());
         Button decoButton = new Button(this);
         decoButton.setText("Deco-App öffnen (manuelle Einstellungen)");
         root.addView(decoButton);
@@ -141,6 +146,35 @@ public class MainActivity extends Activity {
         after.setOnClickListener(v -> compareOptimization());
         compare.setOnClickListener(v -> showFloorComparison());
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+    }
+
+
+    /**
+     * Safe, local capability gate. An open TCP port is not proof of an API.
+     * No credentials, speculative endpoints, or router writes are attempted.
+     */
+    private void showDecoControlCompatibility() {
+        SharedPreferences prefs = getSharedPreferences("deco_settings", MODE_PRIVATE);
+        String host = prefs.getString("main_deco_ip", "192.168.2.220");
+        String message = "Deco X50 EU/1.0\\n"
+            + "Firmware laut Analyseprofil: 1.11.1 Build 26081714 Rel. 32981\\n"
+            + "Lokale Adresse: " + host + "\\n\\n"
+            + "Status: Direkte Schreibsteuerung NICHT freigegeben.\\n\\n"
+            + "Die zuvor erreichbaren TCP-Ports 80, 443, 20001 und 30001 "
+            + "belegen keine dokumentierte, kompatible Verwaltungs-API. "
+            + "HTTP 307 ist lediglich eine Weiterleitung.\\n\\n"
+            + "Für eine Freigabe wären eine nachweislich unterstützte Schnittstelle, "
+            + "sichere Anmeldung, Firmware-Abgleich, eine Rückleseprüfung und "
+            + "eine ausdrückliche Bestätigung jeder Änderung erforderlich.\\n\\n"
+            + "Bis dahin bleiben alle Routereinstellungen unverändert. "
+            + "Die offizielle Deco-App ist der unterstützte manuelle Weg.";
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Deco-Direktsteuerung – Sicherheitsprüfung")
+            .setMessage(message)
+            .setNegativeButton("Schließen", null)
+            .setPositiveButton("Deco-App öffnen", (dialog, which) -> openDecoOptimization())
+            .show();
+        if (report != null) report.setText(message);
     }
 
     private void shareReport() {

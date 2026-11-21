@@ -71,6 +71,9 @@ public class MainActivity extends Activity {
         Button channelsButton = new Button(this);
         channelsButton.setText("Kanäle und WLAN optimieren");
         root.addView(channelsButton);
+        Button protocolButton = new Button(this);
+        protocolButton.setText("Deco-Direktsteuerung prüfen (Test)");
+        root.addView(protocolButton);
         Button decoButton = new Button(this);
         decoButton.setText("Deco-Netzwerk jetzt optimieren");
         root.addView(decoButton);
@@ -104,9 +107,54 @@ public class MainActivity extends Activity {
             try { meshMode = false; channelMode = true; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("Kanaloptimierung fehlgeschlagen", error); }
         });
+        protocolButton.setOnClickListener(v -> probeDecoProtocol());
         decoButton.setOnClickListener(v -> openDecoOptimization());
         compare.setOnClickListener(v -> showFloorComparison());
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+    }
+
+    private void probeDecoProtocol() {
+        if (wifi == null || !wifi.isWifiEnabled()) {
+            report.setText("Bitte zuerst mit dem eigenen Deco-WLAN verbinden.");
+            return;
+        }
+        android.net.DhcpInfo dhcp = wifi.getDhcpInfo();
+        if (dhcp == null || dhcp.gateway == 0) {
+            report.setText("Kein WLAN-Gateway gefunden. Die Haupt-Deco-IP bitte in der Deco-App nachsehen.");
+            return;
+        }
+        int g = dhcp.gateway;
+        String host = (g & 255) + "." + ((g >> 8) & 255) + "." + ((g >> 16) & 255) + "." + ((g >> 24) & 255);
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Lokale Deco-Schnittstelle prüfen")
+            .setMessage("Es wird nur geprüft, ob am WLAN-Gateway " + host + " die Ports 443 und 20001 erreichbar sind. Keine Anmeldung, keine Änderungen, keine Passwörter. Wenn Starlink statt Deco das Gateway ist, ist der Test nicht aussagekräftig. Fortfahren?")
+            .setNegativeButton("Abbrechen", null)
+            .setPositiveButton("Nur Verbindung testen", (dialog, which) -> {
+                report.setText("Prüfe lokale Schnittstellen am Gateway " + host + " ...");
+                new Thread(() -> {
+                    boolean https = canConnect(host, 443);
+                    boolean ssh = canConnect(host, 20001);
+                    String message = "DECO-DIREKTSTEUERUNG – VORPRÜFUNG\n\nGateway: " + host
+                        + "\nHTTPS (443): " + (https ? "erreichbar" : "nicht erreichbar")
+                        + "\nTMP-SSH (20001): " + (ssh ? "erreichbar" : "nicht erreichbar")
+                        + "\n\nDieser Test bestätigt NICHT, dass das Gerät ein Deco ist oder dass die Netzwerkoptimierung unterstützt wird."
+                        + "\n\nNächster Schritt: Deco-Modell, Firmware und den tatsächlich unterstützten Authentifizierungsweg prüfen. Die Optimierung wird erst nach bestätigter Kompatibilität und ausdrücklicher Freigabe ausgelöst."
+                        + "\n\nKeine Zugangsdaten in Chat oder GitHub eingeben.";
+                    runOnUiThread(() -> report.setText(message));
+                }).start();
+            }).show();
+    }
+
+    private boolean canConnect(String host, int port) {
+        java.net.Socket socket = new java.net.Socket();
+        try {
+            socket.connect(new java.net.InetSocketAddress(host, port), 1800);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        } finally {
+            try { socket.close(); } catch (Exception ignored) {}
+        }
     }
 
     private void openDecoOptimization() {

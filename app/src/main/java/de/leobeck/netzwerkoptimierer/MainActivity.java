@@ -46,7 +46,8 @@ public class MainActivity extends Activity {
         button.setAllCaps(false);
         button.setTextSize(16);
         button.setTextColor(Color.WHITE);
-        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(36, 75, 127)));
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(24, 100, 174)));
+        button.setElevation(5f);
         button.setMinHeight(0);
         button.setMinimumHeight(0);
         button.setPadding(18, 15, 18, 15);
@@ -82,6 +83,18 @@ public class MainActivity extends Activity {
         floorPicker.setSelection(1);
         floorPicker.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(119, 172, 239)));
         root.addView(floorPicker);
+        TextView trafficLight = new TextView(this);
+        trafficLight.setText("●  ROT     ●  GELB     ●  GRÜN");
+        trafficLight.setTextSize(18);
+        trafficLight.setTypeface(null, android.graphics.Typeface.BOLD);
+        trafficLight.setTextColor(Color.rgb(90, 225, 165));
+        trafficLight.setPadding(8, 18, 8, 12);
+        root.addView(trafficLight);
+        TextView signalStatus = new TextView(this);
+        signalStatus.setText("WLAN-Ampel: Noch keine aktuelle Messung");
+        signalStatus.setTextSize(17);
+        signalStatus.setTextColor(Color.WHITE);
+        root.addView(signalStatus);
         TextView safety = new TextView(this);
         safety.setText("ANALYSEMODUS · Router bleibt unverändert");
         safety.setTextColor(Color.rgb(90, 225, 165));
@@ -152,6 +165,21 @@ public class MainActivity extends Activity {
         reportTitle.setPadding(0,20,0,0);
         root.addView(reportTitle);
         root.addView(report);
+        report.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
+            public void onTextChanged(CharSequence text, int start, int before, int count) {
+                java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?i)(?:Signal|RSSI)[^\\\\n]*?(-[0-9]{2,3})\\\\s*dBm").matcher(text);
+                if (matcher.find()) {
+                    try {
+                        int dbm = Integer.parseInt(matcher.group(1));
+                        String grade = dbm >= -55 ? "GRÜN · Sehr gut" : dbm >= -67 ? "GRÜN · Gut" : dbm >= -75 ? "GELB · Mittel" : "ROT · Schwach";
+                        signalStatus.setText("WLAN-Ampel: " + grade + " (" + dbm + " dBm)");
+                        signalStatus.setTextColor(dbm >= -67 ? Color.rgb(76, 220, 142) : dbm >= -75 ? Color.rgb(255, 203, 77) : Color.rgb(255, 102, 102));
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+            public void afterTextChanged(android.text.Editable text) {}
+        });
         ScrollView page = new ScrollView(this);
         page.setFillViewport(true);
         page.addView(root);

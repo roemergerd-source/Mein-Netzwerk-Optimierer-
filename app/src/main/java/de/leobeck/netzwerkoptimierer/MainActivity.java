@@ -66,13 +66,17 @@ public class MainActivity extends Activity {
         button.setTextColor(Color.WHITE);
         button.setGravity(android.view.Gravity.CENTER);
         button.setMaxLines(3);
+        button.setIncludeFontPadding(false);
+        button.setMinHeight(0);
+        button.setMinimumHeight(0);
         button.setPadding((int)(6*density), (int)(8*density), (int)(6*density), (int)(8*density));
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(color);
         shape.setCornerRadius(4 * density);
         button.setBackground(shape);
         android.widget.GridLayout.LayoutParams params = new android.widget.GridLayout.LayoutParams(
-            android.widget.GridLayout.spec(row), android.widget.GridLayout.spec(column));
+            android.widget.GridLayout.spec(row, android.widget.GridLayout.FILL), android.widget.GridLayout.spec(column, android.widget.GridLayout.FILL));
+        params.setGravity(android.view.Gravity.FILL);
         params.width = cellWidth;
         params.height = (int)(92 * density);
         params.setMargins((int)(3*density), (int)(5*density), (int)(3*density), (int)(5*density));
@@ -94,7 +98,7 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setFitsSystemWindows(true);
-        root.setPadding(22, 28, 22, 32);
+        root.setPadding(22, 28, 22, 56);
         root.setBackgroundColor(Color.rgb(12, 22, 37));
         TextView title = new TextView(this);
         title.setText("Mein Netzwerk-Optimierer");
@@ -105,7 +109,7 @@ public class MainActivity extends Activity {
         info.setTextColor(Color.rgb(175, 198, 224));
         info.setPadding(0,12,0,8); root.addView(info);
         TextView buildLabel = new TextView(this);
-        buildLabel.setText("Oberfläche 2.2 · 2×2-Raster");
+        buildLabel.setText("Version 2.3 · Finale Oberfläche");
         buildLabel.setTextSize(12);
         buildLabel.setTextColor(Color.rgb(119, 186, 255));
         buildLabel.setPadding(0, 0, 0, 14);
@@ -134,6 +138,7 @@ public class MainActivity extends Activity {
         TextView redLamp = makeLamp("● ROT", Color.rgb(255, 90, 90));
         TextView yellowLamp = makeLamp("● GELB", Color.rgb(255, 205, 65));
         TextView greenLamp = makeLamp("● GRÜN", Color.rgb(65, 220, 145));
+        lights.setBaselineAligned(false);
         lights.addView(redLamp, new LinearLayout.LayoutParams(0, -2, 1));
         lights.addView(yellowLamp, new LinearLayout.LayoutParams(0, -2, 1));
         lights.addView(greenLamp, new LinearLayout.LayoutParams(0, -2, 1));
@@ -245,6 +250,9 @@ public class MainActivity extends Activity {
                         signalStatus.setText("WLAN-Ampel: " + grade + " (" + dbm + " dBm)");
                         signalStatus.setTextColor(dbm >= -67 ? Color.rgb(76, 220, 142) : dbm >= -75 ? Color.rgb(255, 203, 77) : Color.rgb(255, 102, 102));
                     } catch (NumberFormatException ignored) {}
+                } else {
+                    signalStatus.setText("WLAN-Ampel: Noch keine aktuelle Messung");
+                    signalStatus.setTextColor(Color.WHITE);
                 }
             }
             public void afterTextChanged(android.text.Editable text) {}

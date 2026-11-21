@@ -175,11 +175,11 @@ public class MainActivity extends Activity {
         android.content.SharedPreferences prefs = getSharedPreferences("deco_settings", MODE_PRIVATE);
         address.setText(prefs.getString("main_deco_ip", "192.168.2.220"));
         TextView device = new TextView(this);
-        device.setText("Bekanntes Gerät: Deco X50 Büro, Firmware 1.11.1 Build 26081714 Rel. 32981. Hardware-Version noch unbekannt. Nur lesende Verbindungsdiagnose; keine Anmeldung und keine Steuerbefehle.");
+        device.setText("Bekanntes Gerät: Deco X50 Büro, Firmware 1.11.1 Build 26081714 Rel. 32981. Hardware-Version EU/1.0. Nur lesende Verbindungsdiagnose; keine Anmeldung und keine Steuerbefehle.");
         device.setPadding(20, 10, 20, 10);
         new android.app.AlertDialog.Builder(this)
             .setTitle("Haupt-Deco X50 lokal prüfen")
-            .setMessage("Deco X50 Büro · Firmware 1.11.1 Build 26081714 Rel. 32981. IP-Adresse aus der Deco-App. Nur TCP-Prüfung, keine Änderungen.")
+            .setMessage("Deco X50 Büro · Hardware EU/1.0 · Firmware 1.11.1 Build 26081714 Rel. 32981. IP-Adresse aus der Deco-App. Nur TCP-Prüfung, keine Änderungen.")
             .setView(address)
             .setNegativeButton("Abbrechen", null)
             .setPositiveButton("Verbindung testen", (dialog, which) -> {
@@ -203,7 +203,7 @@ public class MainActivity extends Activity {
                     boolean tcp20001 = canConnect(host, 20001);
                     boolean tcp30001 = canConnect(host, 30001);
                     boolean tcp22 = canConnect(host, 22);
-                    String message = "DECO X50 – DIREKTSTEUERUNG VORPRÜFUNG\nFirmware: 1.11.1 Build 26081714 Rel. 32981\nHardware-Version: unbekannt\n\n"
+                    String message = "DECO X50 – DIREKTSTEUERUNG VORPRÜFUNG\nFirmware: 1.11.1 Build 26081714 Rel. 32981\nHardware-Version: EU/1.0\n\n"
                         + "Deco-IP: " + host
                         + "\nHTTP (80): " + (http ? "TCP erreichbar" : "nicht erreichbar")
                         + "\nHTTPS (443): " + (https ? "TCP erreichbar" : "nicht erreichbar")

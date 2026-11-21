@@ -77,6 +77,12 @@ public class MainActivity extends Activity {
         Button decoButton = new Button(this);
         decoButton.setText("Deco-Netzwerk jetzt optimieren");
         root.addView(decoButton);
+        Button baseline = new Button(this);
+        baseline.setText("Messung vor Optimierung speichern");
+        root.addView(baseline);
+        Button after = new Button(this);
+        after.setText("Ergebnis nach Optimierung vergleichen");
+        root.addView(after);
         Button compare = new Button(this);
         compare.setText("Etagen vergleichen");
         root.addView(compare);
@@ -109,6 +115,8 @@ public class MainActivity extends Activity {
         });
         protocolButton.setOnClickListener(v -> probeDecoProtocol());
         decoButton.setOnClickListener(v -> openDecoOptimization());
+        baseline.setOnClickListener(v -> saveOptimizationBaseline());
+        after.setOnClickListener(v -> compareOptimization());
         compare.setOnClickListener(v -> showFloorComparison());
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
     }
@@ -196,6 +204,81 @@ public class MainActivity extends Activity {
                     report.setText("Die Deco-App konnte nicht geöffnet werden: " + e.getMessage());
                 }
             }).show();
+    }
+
+
+    @SuppressWarnings("deprecation")
+    private void saveOptimizationBaseline() {
+        if (wifi == null || !wifi.isWifiEnabled()) {
+            report.setText("Bitte zuerst mit Netpolice per WLAN verbinden.");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            report.setText("Bitte zuerst WLAN analysieren und die Standortberechtigung erlauben.");
+            return;
+        }
+        WifiInfo info = wifi.getConnectionInfo();
+        if (info == null || info.getRssi() > 0 || info.getRssi() < -110) {
+            report.setText("Keine gueltige WLAN-Messung. Bitte WLAN-Verbindung pruefen.");
+            return;
+        }
+        String floor = floorPicker.getSelectedItem().toString();
+        getSharedPreferences("optimization_baseline", MODE_PRIVATE).edit()
+            .putString("floor", floor)
+            .putInt("rssi", info.getRssi())
+            .putInt("rate", info.getLinkSpeed())
+            .putInt("frequency", info.getFrequency())
+            .putString("bssid", info.getBSSID())
+            .putLong("time", System.currentTimeMillis()).apply();
+        report.setText("VORHER-MESSUNG GESPEICHERT\\n\\nMessort: " + floor
+            + "\\nSignal: " + info.getRssi() + " dBm"
+            + "\\nLinkrate: " + info.getLinkSpeed() + " Mbit/s"
+            + "\\n\\nJetzt in der Deco-App die Netzwerkoptimierung ausfuehren, danach am GLEICHEN Ort erneut messen. Die Linkrate ist kein Internet-Speedtest.");
+    }
+
+    @SuppressWarnings("deprecation")
+    private void compareOptimization() {
+        SharedPreferences prefs = getSharedPreferences("optimization_baseline", MODE_PRIVATE);
+        if (!prefs.contains("time")) {
+            report.setText("Bitte zuerst 'Messung vor Optimierung speichern' antippen.");
+            return;
+        }
+        String floor = floorPicker.getSelectedItem().toString();
+        String savedFloor = prefs.getString("floor", "");
+        if (!savedFloor.equals(floor)) {
+            report.setText("Messort stimmt nicht ueberein. Vorher: " + savedFloor + "; jetzt: " + floor + ". Bitte dieselbe Etage auswaehlen und am gleichen Platz messen.");
+            return;
+        }
+        if (wifi == null || !wifi.isWifiEnabled()) {
+            report.setText("Bitte mit dem WLAN verbinden.");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            report.setText("Bitte zuerst WLAN analysieren und die Standortberechtigung erlauben.");
+            return;
+        }
+        WifiInfo now = wifi.getConnectionInfo();
+        if (now == null || now.getRssi() > 0 || now.getRssi() < -110) {
+            report.setText("Keine gueltige WLAN-Messung.");
+            return;
+        }
+        int before = prefs.getInt("rssi", -100), after = now.getRssi();
+        int rateBefore = prefs.getInt("rate", 0), rateAfter = now.getLinkSpeed();
+        int delta = after - before;
+        String verdict = delta >= 6 ? "Empfang deutlich staerker" : delta <= -6 ? "Empfang deutlich schwaecher" : "Empfang etwa gleich (Messschwankungen moeglich)";
+        StringBuilder out = new StringBuilder("DECO-OPTIMIERUNG: VORHER / NACHHER\\n\\n");
+        out.append("Messort: ").append(floor).append("\\n");
+        out.append("Signal vorher: ").append(before).append(" dBm\\n");
+        out.append("Signal nachher: ").append(after).append(" dBm\\n");
+        out.append("Differenz: ").append(delta > 0 ? "+" : "").append(delta).append(" dB\\n");
+        out.append("Bewertung: ").append(verdict).append("\\n\\n");
+        out.append("Linkrate vorher: ").append(rateBefore).append(" Mbit/s\\n");
+        out.append("Linkrate nachher: ").append(rateAfter).append(" Mbit/s\\n");
+        out.append("Frequenz vorher/nachher: ").append(prefs.getInt("frequency", 0)).append(" / ").append(now.getFrequency()).append(" MHz\\n");
+        out.append("BSSID vorher: ").append(prefs.getString("bssid", "?")).append("\\n");
+        out.append("BSSID nachher: ").append(now.getBSSID()).append("\\n\\n");
+        out.append("WICHTIG: Der Vergleich zeigt nur die Funkverbindung des Handys. Ein anderer Zugangspunkt, Bewegung, wechselnde Last und Messschwankungen koennen die Werte beeinflussen. Eine tatsaechliche Deco-Kanaloptimierung wird dadurch nicht nachgewiesen.");
+        report.setText(out.toString());
     }
 
     private void showFailure(String title, Throwable error) {

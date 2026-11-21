@@ -71,6 +71,9 @@ public class MainActivity extends Activity {
         Button channelsButton = new Button(this);
         channelsButton.setText("Kanäle und WLAN optimieren");
         root.addView(channelsButton);
+        Button decoButton = new Button(this);
+        decoButton.setText("Deco-Netzwerk jetzt optimieren");
+        root.addView(decoButton);
         Button compare = new Button(this);
         compare.setText("Etagen vergleichen");
         root.addView(compare);
@@ -101,8 +104,25 @@ public class MainActivity extends Activity {
             try { meshMode = false; channelMode = true; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("Kanaloptimierung fehlgeschlagen", error); }
         });
+        decoButton.setOnClickListener(v -> openDecoOptimization());
         compare.setOnClickListener(v -> showFloorComparison());
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+    }
+
+    private void openDecoOptimization() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Deco-Netzwerk optimieren")
+            .setMessage("Die Kanaländerung muss das Deco-System selbst ausführen. Die TP-Link-Deco-App wird geöffnet. Dort: Mehr > Netzwerkoptimierung > Scannen > Optimieren (falls angeboten). Währenddessen kann WLAN kurz unterbrochen werden. Unsere App kann die Optimierung derzeit nicht selbst auslösen oder deren Erfolg bestätigen.")
+            .setNegativeButton("Abbrechen", null)
+            .setPositiveButton("Deco öffnen", (dialog, which) -> {
+                try {
+                    Intent intent = getPackageManager().getLaunchIntentForPackage("com.tplink.tpm5");
+                    if (intent != null) startActivity(intent);
+                    else startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=com.tplink.tpm5")));
+                } catch (Exception e) {
+                    report.setText("Die Deco-App konnte nicht geöffnet werden: " + e.getMessage());
+                }
+            }).show();
     }
 
     private void showFailure(String title, Throwable error) {

@@ -41,6 +41,19 @@ public class MainActivity extends Activity {
         catch (Throwable error) { showFailure("Startfehler", error); }
     }
 
+    /** Compact, readable controls that do not force uppercase labels. */
+    private void addCompactButton(LinearLayout root, Button button) {
+        button.setAllCaps(false);
+        button.setTextSize(14);
+        button.setMinHeight(0);
+        button.setMinimumHeight(0);
+        button.setPadding(12, 8, 12, 8);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 2, 0, 2);
+        root.addView(button, params);
+    }
+
     private void initializeUi() {
         wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         LinearLayout root = new LinearLayout(this);
@@ -70,42 +83,42 @@ public class MainActivity extends Activity {
         root.addView(safety);
         Button profileButton = new Button(this);
         profileButton.setText("Deco-Analyseprofil einstellen");
-        root.addView(profileButton);
+        addCompactButton(root, profileButton);
         profileButton.setOnClickListener(v -> showAnalysisProfile());
         Button scan = new Button(this);
         scan.setText("WLAN jetzt messen");
-        root.addView(scan);
+        addCompactButton(root, scan);
         Button optimize = new Button(this);
         optimize.setText("Mesh und Empfang bewerten");
-        root.addView(optimize);
+        addCompactButton(root, optimize);
         Button channelsButton = new Button(this);
         channelsButton.setText("Kanalbelegung analysieren");
-        root.addView(channelsButton);
+        addCompactButton(root, channelsButton);
         Button protocolButton = new Button(this);
         protocolButton.setText("Erweiterte Diagnose: Deco-Ports prüfen");
-        root.addView(protocolButton);
+        addCompactButton(root, protocolButton);
         Button directButton = new Button(this);
         directButton.setText("Deco-Direktsteuerung: Kompatibilität prüfen");
-        root.addView(directButton);
+        addCompactButton(root, directButton);
         directButton.setOnClickListener(v -> showDecoControlCompatibility());
         Button decoButton = new Button(this);
         decoButton.setText("Deco-App öffnen (manuelle Einstellungen)");
-        root.addView(decoButton);
+        addCompactButton(root, decoButton);
         Button baseline = new Button(this);
         baseline.setText("Vergleich: Ausgangsmessung speichern");
-        root.addView(baseline);
+        addCompactButton(root, baseline);
         Button after = new Button(this);
         after.setText("Vergleich: Neue Messung auswerten");
-        root.addView(after);
+        addCompactButton(root, after);
         Button compare = new Button(this);
         compare.setText("Messorte vergleichen");
-        root.addView(compare);
+        addCompactButton(root, compare);
         Button settings = new Button(this);
         settings.setText("WLAN-Einstellungen öffnen");
-        root.addView(settings);
+        addCompactButton(root, settings);
         Button share = new Button(this);
         share.setText("Messbericht teilen");
-        root.addView(share);
+        addCompactButton(root, share);
         share.setOnClickListener(v -> shareReport());
         report = new TextView(this);
         report.setTextSize(16); report.setTextColor(Color.rgb(25,35,45));

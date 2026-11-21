@@ -318,6 +318,13 @@ public class MainActivity extends Activity {
         page.setOverScrollMode(View.OVER_SCROLL_NEVER);
         page.setClipToPadding(false);
         page.setPadding(0, 0, 0, dp(24));
+        TextView copyright = new TextView(this);
+        copyright.setText("© Leobeck 2026");
+        copyright.setTextSize(11);
+        copyright.setTextColor(Color.rgb(145, 157, 174));
+        copyright.setGravity(android.view.Gravity.START);
+        copyright.setPadding(0, dp(24), 0, dp(8));
+        root.addView(copyright);
         page.addView(root);
         getWindow().setStatusBarColor(Color.rgb(12,22,37));
         getWindow().setNavigationBarColor(Color.rgb(12,22,37));

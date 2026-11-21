@@ -158,13 +158,13 @@ public class MainActivity extends Activity {
                     boolean http = canConnect(host, 80);
                     boolean https = canConnect(host, 443);
                     boolean tcp20001 = canConnect(host, 20001);
-                    String message = "DECO X50 – DIREKTSTEUERUNG VORPRÜFUNG\\n\\n"
+                    String message = "DECO X50 – DIREKTSTEUERUNG VORPRÜFUNG\n\n"
                         + "Deco-IP: " + host
-                        + "\\nHTTP (80): " + (http ? "TCP erreichbar" : "nicht erreichbar")
-                        + "\\nHTTPS (443): " + (https ? "TCP erreichbar" : "nicht erreichbar")
-                        + "\\nPort 20001: " + (tcp20001 ? "TCP erreichbar" : "nicht erreichbar")
-                        + "\\n\\nEin offener Port beweist keine unterstützte Deco-Steuerung. Ein geschlossener Port schließt andere Schnittstellen nicht aus."
-                        + "\\n\\nEs wurden keine Router-Einstellungen geändert. Für eine echte Kanaloptimierung muss zuerst ein kompatibler, autorisierter Steuerungsweg bestätigt werden.";
+                        + "\nHTTP (80): " + (http ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\nHTTPS (443): " + (https ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\nPort 20001: " + (tcp20001 ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\n\nEin offener Port beweist keine unterstützte Deco-Steuerung. Ein geschlossener Port schließt andere Schnittstellen nicht aus."
+                        + "\n\nEs wurden keine Router-Einstellungen geändert. Für eine echte Kanaloptimierung muss zuerst ein kompatibler, autorisierter Steuerungsweg bestätigt werden.";
                     runOnUiThread(() -> report.setText(message));
                 }).start();
             }).show();

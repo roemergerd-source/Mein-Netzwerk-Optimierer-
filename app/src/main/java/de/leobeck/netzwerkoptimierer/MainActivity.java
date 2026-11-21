@@ -118,28 +118,42 @@ public class MainActivity extends Activity {
             report.setText("Bitte zuerst mit dem eigenen Deco-WLAN verbinden.");
             return;
         }
-        android.net.DhcpInfo dhcp = wifi.getDhcpInfo();
-        if (dhcp == null || dhcp.gateway == 0) {
-            report.setText("Kein WLAN-Gateway gefunden. Die Haupt-Deco-IP bitte in der Deco-App nachsehen.");
-            return;
-        }
-        int g = dhcp.gateway;
-        String host = (g & 255) + "." + ((g >> 8) & 255) + "." + ((g >> 16) & 255) + "." + ((g >> 24) & 255);
+        final android.widget.EditText address = new android.widget.EditText(this);
+        address.setSingleLine(true);
+        address.setInputType(android.text.InputType.TYPE_CLASS_PHONE);
+        android.content.SharedPreferences prefs = getSharedPreferences("deco_settings", MODE_PRIVATE);
+        address.setText(prefs.getString("main_deco_ip", "192.168.2.220"));
         new android.app.AlertDialog.Builder(this)
-            .setTitle("Lokale Deco-Schnittstelle prüfen")
-            .setMessage("Es wird nur geprüft, ob am WLAN-Gateway " + host + " die Ports 443 und 20001 erreichbar sind. Keine Anmeldung, keine Änderungen, keine Passwörter. Wenn Starlink statt Deco das Gateway ist, ist der Test nicht aussagekräftig. Fortfahren?")
+            .setTitle("Haupt-Deco X50 prüfen")
+            .setMessage("IP-Adresse aus der Deco-App (Büro / Haupt). Es werden ausschließlich TCP-Verbindungen getestet; keine Anmeldung und keine Änderungen.")
+            .setView(address)
             .setNegativeButton("Abbrechen", null)
-            .setPositiveButton("Nur Verbindung testen", (dialog, which) -> {
-                report.setText("Prüfe lokale Schnittstellen am Gateway " + host + " ...");
+            .setPositiveButton("Verbindung testen", (dialog, which) -> {
+                final String host = address.getText().toString().trim();
+                if (!host.matches("^(?:\\\\d{1,3}\\\\.){3}\\\\d{1,3}$")) {
+                    report.setText("Ungültige IPv4-Adresse. Bitte die IP des Haupt-Deco eingeben.");
+                    return;
+                }
+                String[] octets = host.split("\\\\.");
+                for (String octet : octets) {
+                    if (Integer.parseInt(octet) > 255) {
+                        report.setText("Ungültige IPv4-Adresse.");
+                        return;
+                    }
+                }
+                prefs.edit().putString("main_deco_ip", host).apply();
+                report.setText("Prüfe den Haupt-Deco X50 unter " + host + " ...");
                 new Thread(() -> {
+                    boolean http = canConnect(host, 80);
                     boolean https = canConnect(host, 443);
-                    boolean ssh = canConnect(host, 20001);
-                    String message = "DECO-DIREKTSTEUERUNG – VORPRÜFUNG\n\nGateway: " + host
-                        + "\nHTTPS (443): " + (https ? "erreichbar" : "nicht erreichbar")
-                        + "\nTMP-SSH (20001): " + (ssh ? "erreichbar" : "nicht erreichbar")
-                        + "\n\nDieser Test bestätigt NICHT, dass das Gerät ein Deco ist oder dass die Netzwerkoptimierung unterstützt wird."
-                        + "\n\nNächster Schritt: Deco-Modell, Firmware und den tatsächlich unterstützten Authentifizierungsweg prüfen. Die Optimierung wird erst nach bestätigter Kompatibilität und ausdrücklicher Freigabe ausgelöst."
-                        + "\n\nKeine Zugangsdaten in Chat oder GitHub eingeben.";
+                    boolean tcp20001 = canConnect(host, 20001);
+                    String message = "DECO X50 – DIREKTSTEUERUNG VORPRÜFUNG\\n\\n"
+                        + "Deco-IP: " + host
+                        + "\\nHTTP (80): " + (http ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\\nHTTPS (443): " + (https ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\\nPort 20001: " + (tcp20001 ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\\n\\nEin offener Port beweist keine unterstützte Deco-Steuerung. Ein geschlossener Port schließt andere Schnittstellen nicht aus."
+                        + "\\n\\nEs wurden keine Router-Einstellungen geändert. Für eine echte Kanaloptimierung muss zuerst ein kompatibler, autorisierter Steuerungsweg bestätigt werden.";
                     runOnUiThread(() -> report.setText(message));
                 }).start();
             }).show();

@@ -227,20 +227,21 @@ public class MainActivity extends Activity {
             socket.connect(new java.net.InetSocketAddress(host, 80), 1500);
             socket.setSoTimeout(1500);
             java.io.OutputStream out = socket.getOutputStream();
-            out.write(("GET / HTTP/1.1\\r\\nHost: " + host
-                + "\\r\\nConnection: close\\r\\nAccept: */*\\r\\n\\r\\n")
+            out.write(("GET / HTTP/1.1\r\nHost: " + host
+                + "\r\nConnection: close\r\nAccept: */*\r\n\r\n")
                 .getBytes(java.nio.charset.StandardCharsets.US_ASCII));
             out.flush();
             java.io.InputStream in = socket.getInputStream();
             java.io.ByteArrayOutputStream first = new java.io.ByteArrayOutputStream();
             for (int i = 0; i < 160; i++) {
                 int c = in.read();
-                if (c == -1 || c == '\\n') break;
-                if (c != '\\r') first.write(c);
+                if (c == -1 || c == '\n') break;
+                if (c != '\r') first.write(c);
             }
             String line = first.toString("US-ASCII").trim();
             if (line.matches("HTTP/1\\.[01] [0-9]{3}.*")) {
-                return line.replaceAll("[^\\x20-\\x7E]", "").substring(0, Math.min(90, line.length()));
+                String clean = line.replaceAll("[^\\x20-\\x7E]", "");
+                return clean.substring(0, Math.min(90, clean.length()));
             }
             return "Keine gültige HTTP-Statuszeile";
         } catch (Exception e) {

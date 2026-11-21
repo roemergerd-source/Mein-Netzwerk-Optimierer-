@@ -57,6 +57,24 @@ public class MainActivity extends Activity {
         root.addView(button, params);
     }
 
+    private void addGridButton(LinearLayout row, Button button, int color) {
+        button.setAllCaps(false);
+        button.setTextSize(15);
+        button.setTextColor(Color.WHITE);
+        button.setGravity(android.view.Gravity.CENTER);
+        button.setMinHeight(96);
+        button.setMinimumHeight(96);
+        button.setMaxLines(3);
+        button.setPadding(10, 12, 10, 12);
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+        shape.setColor(color);
+        shape.setCornerRadius(5f * getResources().getDisplayMetrics().density);
+        button.setBackground(shape);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, 100 * getResources().getDisplayMetrics().density, 1f);
+        params.setMargins(4, 6, 4, 6);
+        row.addView(button, params);
+    }
+
     private TextView makeLamp(String label, int color) {
         TextView lamp = new TextView(this);
         lamp.setText(label);
@@ -129,21 +147,27 @@ public class MainActivity extends Activity {
         root.addView(section);
         Button profileButton = new Button(this);
         profileButton.setText("Deco-Analyseprofil einstellen");
-        addCompactButton(root, profileButton);
-        profileButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(166, 91, 16)));
+        
         profileButton.setOnClickListener(v -> showAnalysisProfile());
         Button scan = new Button(this);
         scan.setText("WLAN jetzt messen");
-        addCompactButton(root, scan);
-        scan.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(0, 116, 204)));
+        
         Button optimize = new Button(this);
         optimize.setText("Mesh und Empfang bewerten");
-        addCompactButton(root, optimize);
-        optimize.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(104, 55, 174)));
+        
         Button channelsButton = new Button(this);
         channelsButton.setText("Kanalbelegung analysieren");
-        addCompactButton(root, channelsButton);
-        channelsButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(0, 132, 91)));
+        
+        LinearLayout firstRow = new LinearLayout(this);
+        firstRow.setOrientation(LinearLayout.HORIZONTAL);
+        root.addView(firstRow);
+        addGridButton(firstRow, profileButton, Color.rgb(166, 91, 16));
+        addGridButton(firstRow, scan, Color.rgb(0, 116, 204));
+        LinearLayout secondRow = new LinearLayout(this);
+        secondRow.setOrientation(LinearLayout.HORIZONTAL);
+        root.addView(secondRow);
+        addGridButton(secondRow, optimize, Color.rgb(104, 55, 174));
+        addGridButton(secondRow, channelsButton, Color.rgb(0, 132, 91));
         TextView advancedTitle = new TextView(this);
         advancedTitle.setText("ERWEITERTE FUNKTIONEN");
         advancedTitle.setTextSize(14);

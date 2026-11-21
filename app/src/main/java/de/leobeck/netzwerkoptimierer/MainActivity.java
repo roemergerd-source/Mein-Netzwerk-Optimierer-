@@ -156,16 +156,16 @@ public class MainActivity extends Activity {
     private void showDecoControlCompatibility() {
         SharedPreferences prefs = getSharedPreferences("deco_settings", MODE_PRIVATE);
         String host = prefs.getString("main_deco_ip", "192.168.2.220");
-        String message = "Deco X50 EU/1.0\\n"
-            + "Firmware laut Analyseprofil: 1.11.1 Build 26081714 Rel. 32981\\n"
-            + "Lokale Adresse: " + host + "\\n\\n"
-            + "Status: Direkte Schreibsteuerung NICHT freigegeben.\\n\\n"
+        String message = "Deco X50 EU/1.0\n"
+            + "Firmware laut Analyseprofil: 1.11.1 Build 26081714 Rel. 32981\n"
+            + "Lokale Adresse: " + host + "\n\n"
+            + "Status: Direkte Schreibsteuerung NICHT freigegeben.\n\n"
             + "Die zuvor erreichbaren TCP-Ports 80, 443, 20001 und 30001 "
             + "belegen keine dokumentierte, kompatible Verwaltungs-API. "
-            + "HTTP 307 ist lediglich eine Weiterleitung.\\n\\n"
+            + "HTTP 307 ist lediglich eine Weiterleitung.\n\n"
             + "Für eine Freigabe wären eine nachweislich unterstützte Schnittstelle, "
             + "sichere Anmeldung, Firmware-Abgleich, eine Rückleseprüfung und "
-            + "eine ausdrückliche Bestätigung jeder Änderung erforderlich.\\n\\n"
+            + "eine ausdrückliche Bestätigung jeder Änderung erforderlich.\n\n"
             + "Bis dahin bleiben alle Routereinstellungen unverändert. "
             + "Die offizielle Deco-App ist der unterstützte manuelle Weg.";
         new android.app.AlertDialog.Builder(this)

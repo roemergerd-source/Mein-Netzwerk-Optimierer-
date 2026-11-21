@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
         scan.setText("WLAN analysieren");
         root.addView(scan);
         Button optimize = new Button(this);
-        optimize.setText("Automatisch bewerten und optimieren");
+        optimize.setText("Mesh bewerten und Optimierung planen");
         root.addView(optimize);
         Button settings = new Button(this);
         settings.setText("WLAN-Einstellungen öffnen");
@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
         });
         optimize.setOnClickListener(v -> {
             try { checkAndAnalyze(); }
-            catch (Throwable error) { showFailure("Optimierung fehlgeschlagen", error); }
+            catch (Throwable error) { showFailure("Mesh-Bewertung fehlgeschlagen", error); }
         });
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
     }
@@ -116,7 +116,7 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     private void analyze() {
         if (!wifi.isWifiEnabled()) { report.setText("WLAN ist ausgeschaltet. Bitte aktiviere WLAN."); return; }
-        StringBuilder out = new StringBuilder("WLAN-Umgebung\n\n");
+        StringBuilder out = new StringBuilder("Deco Mesh: 1 × X50 + 6 × X1500 (drahtlos)\nWLAN-Umgebung\n\n");
         WifiInfo current = wifi.getConnectionInfo();
         if (current != null) {
             out.append("Verbindung: ").append(current.getSSID()).append("\n");
@@ -133,11 +133,11 @@ public class MainActivity extends Activity {
             int ch = channel(r.frequency);
             if (ch > 0) channels.put(ch, channels.getOrDefault(ch,0)+1);
         }
-        out.append("Sichtbare Zugangspunkte: ").append(results.size()).append("\\n");
-        out.append("Scan angefordert: ").append(requested ? "ja (Ergebnisse können älter sein)" : "nein / durch Android begrenzt").append("\\n");
+        out.append("Sichtbare Zugangspunkte: ").append(results.size()).append("\n");
+        out.append("Scan angefordert: ").append(requested ? "ja (Ergebnisse können älter sein)" : "nein / durch Android begrenzt").append("\n");
         out.append("Kanalbelegung (Zugangspunkte):\\n");
         for (Map.Entry<Integer,Integer> e : channels.entrySet())
-            out.append("Kanal ").append(e.getKey()).append(": ").append(e.getValue()).append("\\n");
+            out.append("Kanal ").append(e.getKey()).append(": ").append(e.getValue()).append("\n");
 
         // Weighted interference estimate: stronger neighboring signals count more.
         // 2.4 GHz channels overlap even when their center channels differ.
@@ -145,16 +145,18 @@ public class MainActivity extends Activity {
         int[] candidates5 = {36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140};
         int best24 = bestChannel(results, candidates24, true);
         int best5 = bestChannel(results, candidates5, false);
-        out.append("\\nAUTOMATISCHE AUSWERTUNG\\n");
+        out.append("\nAUTOMATISCHE AUSWERTUNG\\n");
         out.append("2,4 GHz: Kanal ").append(best24).append(" als Testkandidat (20 MHz).\\n");
         out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\\n");
         out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite.\\n");
-        out.append("\\nOPTIMIERUNG\\n");
-        out.append("1. Diese Messung als Ausgangswert notieren.\\n");
-        out.append("2. Im Router einen vorgeschlagenen Kanal testen oder automatische Kanalwahl aktivieren.\\n");
-        out.append("3. Für 2,4 GHz 20 MHz Kanalbreite bevorzugen.\\n");
-        out.append("4. Danach erneut analysieren und Stabilität sowie Geschwindigkeit vergleichen.\\n");
-        out.append("Android kann Routerkanäle nicht ohne Routerzugang ändern. Ein Scan ist keine Messung aller Interferenzen.\\n");
+        out.append("\nDECO-MESH-OPTIMIERUNGSPLAN\n");
+        out.append("Konfiguration: 1 Deco X50 und 6 Deco X1500, alle X1500 per WLAN-Backhaul.\n");
+        out.append("1. In der Deco-App unter Netzwerkoptimierung einen Scan starten (falls verfügbar).\n");
+        out.append("2. In der Deco-App die Verbindung jedes X1500 zum übergeordneten Deco prüfen. Schwache Mesh-Verbindungen durch andere Positionierung verbessern.\n");
+        out.append("3. Zu dicht platzierte Deco-Geräte können sich gegenseitig stören. Geräte nacheinander testen, nicht alle gleichzeitig ändern.\n");
+        out.append("4. Nach jeder Änderung am gleichen Standort erneut messen und Stabilität sowie Geschwindigkeit vergleichen.\n");
+        out.append("5. Bei sieben drahtlosen Deco-Geräten besonders auf Funk-Backhaul und mehrfache Funkstrecken achten; LAN-Backhaul wäre bei Gelegenheit eine Verbesserung.\n");
+        out.append("Hinweis: Diese App kann Deco-Einstellungen nicht selbst ändern und kann den Mesh-Backhaul nicht vollständig messen. Kanalvorschläge sind nur Testkandidaten.\n");
         report.setText(out.toString());
     }
 

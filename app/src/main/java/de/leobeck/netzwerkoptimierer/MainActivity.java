@@ -57,6 +57,16 @@ public class MainActivity extends Activity {
         root.addView(button, params);
     }
 
+    private TextView makeLamp(String label, int color) {
+        TextView lamp = new TextView(this);
+        lamp.setText(label);
+        lamp.setTextSize(16);
+        lamp.setTypeface(null, android.graphics.Typeface.BOLD);
+        lamp.setTextColor(color);
+        lamp.setGravity(android.view.Gravity.CENTER);
+        return lamp;
+    }
+
     private void initializeUi() {
         wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         LinearLayout root = new LinearLayout(this);
@@ -78,18 +88,28 @@ public class MainActivity extends Activity {
         floorLabel.setTextSize(17);
         root.addView(floorLabel);
         floorPicker = new Spinner(this);
-        ArrayAdapter<String> floorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Keller", "Erdgeschoss", "Obergeschoss", "Büro", "Raum Satellit 1", "Flur", "Garten", "Nebengebäude"});
+        ArrayAdapter<String> floorAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, new String[]{"Keller", "Erdgeschoss", "Obergeschoss", "Büro", "Raum Satellit 1", "Flur", "Garten", "Nebengebäude"}) {
+            @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                view.setTextColor(Color.WHITE); view.setTextSize(19); view.setPadding(14, 12, 14, 12);
+                return view;
+            }
+        };
+        floorAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         floorPicker.setAdapter(floorAdapter);
         floorPicker.setSelection(1);
         floorPicker.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(119, 172, 239)));
         root.addView(floorPicker);
-        TextView trafficLight = new TextView(this);
-        trafficLight.setText("●  ROT     ●  GELB     ●  GRÜN");
-        trafficLight.setTextSize(18);
-        trafficLight.setTypeface(null, android.graphics.Typeface.BOLD);
-        trafficLight.setTextColor(Color.rgb(90, 225, 165));
-        trafficLight.setPadding(8, 18, 8, 12);
-        root.addView(trafficLight);
+        LinearLayout lights = new LinearLayout(this);
+        lights.setOrientation(LinearLayout.HORIZONTAL);
+        lights.setPadding(0, 18, 0, 10);
+        TextView redLamp = makeLamp("● ROT", Color.rgb(255, 90, 90));
+        TextView yellowLamp = makeLamp("● GELB", Color.rgb(255, 205, 65));
+        TextView greenLamp = makeLamp("● GRÜN", Color.rgb(65, 220, 145));
+        lights.addView(redLamp, new LinearLayout.LayoutParams(0, -2, 1));
+        lights.addView(yellowLamp, new LinearLayout.LayoutParams(0, -2, 1));
+        lights.addView(greenLamp, new LinearLayout.LayoutParams(0, -2, 1));
+        root.addView(lights);
         TextView signalStatus = new TextView(this);
         signalStatus.setText("WLAN-Ampel: Noch keine aktuelle Messung");
         signalStatus.setTextSize(17);
@@ -110,45 +130,61 @@ public class MainActivity extends Activity {
         Button profileButton = new Button(this);
         profileButton.setText("Deco-Analyseprofil einstellen");
         addCompactButton(root, profileButton);
+        profileButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(166, 91, 16)));
         profileButton.setOnClickListener(v -> showAnalysisProfile());
         Button scan = new Button(this);
         scan.setText("WLAN jetzt messen");
         addCompactButton(root, scan);
+        scan.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(0, 116, 204)));
         Button optimize = new Button(this);
         optimize.setText("Mesh und Empfang bewerten");
         addCompactButton(root, optimize);
+        optimize.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(104, 55, 174)));
         Button channelsButton = new Button(this);
         channelsButton.setText("Kanalbelegung analysieren");
         addCompactButton(root, channelsButton);
+        channelsButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(0, 132, 91)));
         TextView advancedTitle = new TextView(this);
         advancedTitle.setText("ERWEITERTE FUNKTIONEN");
         advancedTitle.setTextSize(14);
         advancedTitle.setTypeface(null, android.graphics.Typeface.BOLD);
         advancedTitle.setTextColor(Color.rgb(119, 186, 255));
         advancedTitle.setPadding(0, 22, 0, 8);
-        root.addView(advancedTitle);
+        Button advancedToggle = new Button(this);
+        advancedToggle.setText("⚙ Erweiterte Funktionen anzeigen ▼");
+        addCompactButton(root, advancedToggle);
+        LinearLayout advancedPanel = new LinearLayout(this);
+        advancedPanel.setOrientation(LinearLayout.VERTICAL);
+        advancedPanel.setVisibility(View.GONE);
+        root.addView(advancedPanel);
+        advancedPanel.addView(advancedTitle);
+        advancedToggle.setOnClickListener(v -> {
+            boolean open = advancedPanel.getVisibility() != View.VISIBLE;
+            advancedPanel.setVisibility(open ? View.VISIBLE : View.GONE);
+            advancedToggle.setText(open ? "⚙ Erweiterte Funktionen schließen ▲" : "⚙ Erweiterte Funktionen anzeigen ▼");
+        });
         Button protocolButton = new Button(this);
         protocolButton.setText("Erweiterte Diagnose: Deco-Ports prüfen");
-        addCompactButton(root, protocolButton);
+        addCompactButton(advancedPanel, protocolButton);
         Button directButton = new Button(this);
         directButton.setText("Deco-Direktsteuerung: Kompatibilität prüfen");
-        addCompactButton(root, directButton);
+        addCompactButton(advancedPanel, directButton);
         directButton.setOnClickListener(v -> showDecoControlCompatibility());
         Button decoButton = new Button(this);
         decoButton.setText("Deco-App öffnen (manuelle Einstellungen)");
-        addCompactButton(root, decoButton);
+        addCompactButton(advancedPanel, decoButton);
         Button baseline = new Button(this);
         baseline.setText("Vergleich: Ausgangsmessung speichern");
-        addCompactButton(root, baseline);
+        addCompactButton(advancedPanel, baseline);
         Button after = new Button(this);
         after.setText("Vergleich: Neue Messung auswerten");
-        addCompactButton(root, after);
+        addCompactButton(advancedPanel, after);
         Button compare = new Button(this);
         compare.setText("Messorte vergleichen");
-        addCompactButton(root, compare);
+        addCompactButton(advancedPanel, compare);
         Button settings = new Button(this);
         settings.setText("WLAN-Einstellungen öffnen");
-        addCompactButton(root, settings);
+        addCompactButton(advancedPanel, settings);
         Button share = new Button(this);
         share.setText("Messbericht teilen");
         addCompactButton(root, share);
@@ -168,7 +204,7 @@ public class MainActivity extends Activity {
         report.addTextChangedListener(new android.text.TextWatcher() {
             public void beforeTextChanged(CharSequence text, int start, int count, int after) {}
             public void onTextChanged(CharSequence text, int start, int before, int count) {
-                java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?i)(?:Signal|RSSI)[^\\\\n]*?(-[0-9]{2,3})\\\\s*dBm").matcher(text);
+                java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?i)(?:Signal|RSSI)[^\\n]*?(-[0-9]{2,3})\\s*dBm").matcher(text);
                 if (matcher.find()) {
                     try {
                         int dbm = Integer.parseInt(matcher.group(1));
@@ -182,6 +218,8 @@ public class MainActivity extends Activity {
         });
         ScrollView page = new ScrollView(this);
         page.setFillViewport(true);
+        page.setClipToPadding(false);
+        page.setPadding(0, 0, 0, 48);
         page.addView(root);
         setContentView(page);
         String lastCrash = getSharedPreferences("diagnostics", MODE_PRIVATE).getString("lastCrash", null);

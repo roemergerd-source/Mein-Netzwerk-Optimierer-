@@ -52,6 +52,9 @@ public class MainActivity extends Activity {
         Button scan = new Button(this);
         scan.setText("WLAN analysieren");
         root.addView(scan);
+        Button optimize = new Button(this);
+        optimize.setText("Automatisch bewerten und optimieren");
+        root.addView(optimize);
         Button settings = new Button(this);
         settings.setText("WLAN-Einstellungen öffnen");
         root.addView(settings);
@@ -70,6 +73,10 @@ public class MainActivity extends Activity {
         scan.setOnClickListener(v -> {
             try { checkAndAnalyze(); }
             catch (Throwable error) { showFailure("WLAN-Analyse fehlgeschlagen", error); }
+        });
+        optimize.setOnClickListener(v -> {
+            try { checkAndAnalyze(); }
+            catch (Throwable error) { showFailure("Optimierung fehlgeschlagen", error); }
         });
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
     }
@@ -123,19 +130,56 @@ public class MainActivity extends Activity {
         if (results == null) results = Collections.emptyList();
         Map<Integer,Integer> channels = new TreeMap<>();
         for (ScanResult r : results) {
-            int channel = channel(r.frequency);
-            if (channel > 0) channels.put(channel, channels.getOrDefault(channel,0)+1);
+            int ch = channel(r.frequency);
+            if (ch > 0) channels.put(ch, channels.getOrDefault(ch,0)+1);
         }
-        out.append("Sichtbare Zugangspunkte: ").append(results.size()).append("\n");
-        out.append("Scan-Aktualisierung angefordert: ").append(requested ? "ja" : "nicht möglich / begrenzt").append("\n");
-        out.append("Kanalbelegung (Anzahl sichtbarer Zugangspunkte):\n");
-        for (Map.Entry<Integer,Integer> e : channels.entrySet()) out.append("Kanal ").append(e.getKey()).append(": ").append(e.getValue()).append("\n");
-        out.append("\nEmpfehlungen:\n");
-        out.append("• Für 2,4 GHz nach Möglichkeit 20 MHz Kanalbreite verwenden. Kanäle 1, 6 und 11 vergleichen.\n");
-        out.append("• Für kurze Entfernungen bevorzugt 5 GHz verwenden, wenn verfügbar.\n");
-        out.append("• Router zentral und frei aufstellen, nicht direkt neben Metall oder Elektrogeräten.\n");
-        out.append("• Diese Übersicht zeigt Zugangspunkte, keine Messung aller Funkstörungen. Kanalwechsel erfolgen im Router.\n");
+        out.append("Sichtbare Zugangspunkte: ").append(results.size()).append("\\n");
+        out.append("Scan angefordert: ").append(requested ? "ja (Ergebnisse können älter sein)" : "nein / durch Android begrenzt").append("\\n");
+        out.append("Kanalbelegung (Zugangspunkte):\\n");
+        for (Map.Entry<Integer,Integer> e : channels.entrySet())
+            out.append("Kanal ").append(e.getKey()).append(": ").append(e.getValue()).append("\\n");
+
+        // Weighted interference estimate: stronger neighboring signals count more.
+        // 2.4 GHz channels overlap even when their center channels differ.
+        int[] candidates24 = {1,6,11};
+        int[] candidates5 = {36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140};
+        int best24 = bestChannel(results, candidates24, true);
+        int best5 = bestChannel(results, candidates5, false);
+        out.append("\\nAUTOMATISCHE AUSWERTUNG\\n");
+        out.append("2,4 GHz: Kanal ").append(best24).append(" als Testkandidat (20 MHz).\\n");
+        out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\\n");
+        out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite.\\n");
+        out.append("\\nOPTIMIERUNG\\n");
+        out.append("1. Diese Messung als Ausgangswert notieren.\\n");
+        out.append("2. Im Router einen vorgeschlagenen Kanal testen oder automatische Kanalwahl aktivieren.\\n");
+        out.append("3. Für 2,4 GHz 20 MHz Kanalbreite bevorzugen.\\n");
+        out.append("4. Danach erneut analysieren und Stabilität sowie Geschwindigkeit vergleichen.\\n");
+        out.append("Android kann Routerkanäle nicht ohne Routerzugang ändern. Ein Scan ist keine Messung aller Interferenzen.\\n");
         report.setText(out.toString());
+    }
+
+    private int bestChannel(List<ScanResult> results, int[] candidates, boolean band24) {
+        int best = candidates[0];
+        double lowest = Double.POSITIVE_INFINITY;
+        for (int candidate : candidates) {
+            double score = 0;
+            for (ScanResult r : results) {
+                boolean is24 = r.frequency >= 2400 && r.frequency < 2500;
+                if (is24 != band24) continue;
+                int other = channel(r.frequency);
+                if (other <= 0) continue;
+                int distance = Math.abs(candidate - other);
+                // 2.4 GHz has broad overlap; 5 GHz 20 MHz centers are 4 channels apart.
+                double overlap = band24 ? Math.max(0, 1.0 - distance / 5.0) :
+                    (distance == 0 ? 1.0 : (distance < 4 ? 0.5 : 0.0));
+                double strength = Math.pow(10.0, (Math.max(-95, Math.min(-30, r.level)) + 95) / 25.0);
+                score += overlap * strength;
+            }
+            // Prefer non-DFS 5 GHz channels on ties to avoid radar-related interruptions.
+            if (!band24 && candidate >= 52) score += 0.001;
+            if (score < lowest) { lowest = score; best = candidate; }
+        }
+        return best;
     }
 
     private int channel(int mhz) {

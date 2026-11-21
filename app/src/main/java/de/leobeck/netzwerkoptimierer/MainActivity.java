@@ -12,6 +12,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.graphics.Color;
+import android.util.Log;
+import android.os.Process;
 import android.view.View;
 import android.widget.*;
 import java.util.*;
@@ -22,7 +24,19 @@ public class MainActivity extends Activity {
     private final int permissionRequest = 42;
 
     @Override public void onCreate(Bundle state) {
+        Thread.setDefaultUncaughtExceptionHandler((thread, error) -> {
+            try {
+                getSharedPreferences("diagnostics", MODE_PRIVATE).edit()
+                    .putString("lastCrash", Log.getStackTraceString(error)).commit();
+            } catch (Throwable ignored) {}
+            Process.killProcess(Process.myPid());
+        });
         super.onCreate(state);
+        try { initializeUi(); }
+        catch (Throwable error) { showFailure("Startfehler", error); }
+    }
+
+    private void initializeUi() {
         wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -48,8 +62,27 @@ public class MainActivity extends Activity {
         report.setText("Tippe auf „WLAN analysieren“. Für die Anzeige benachbarter Netze sind Standortberechtigung und aktivierte Standortdienste erforderlich.");
         scroll.addView(report); root.addView(scroll);
         setContentView(root);
-        scan.setOnClickListener(v -> checkAndAnalyze());
+        String lastCrash = getSharedPreferences("diagnostics", MODE_PRIVATE).getString("lastCrash", null);
+        if (lastCrash != null) {
+            report.setText("Vorheriger Absturz:\n" + lastCrash);
+            getSharedPreferences("diagnostics", MODE_PRIVATE).edit().remove("lastCrash").apply();
+        }
+        scan.setOnClickListener(v -> {
+            try { checkAndAnalyze(); }
+            catch (Throwable error) { showFailure("WLAN-Analyse fehlgeschlagen", error); }
+        });
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+    }
+
+    private void showFailure(String title, Throwable error) {
+        String details = title + "\n" + error.getClass().getSimpleName() + ": " + error.getMessage();
+        if (report != null) report.setText(details);
+        else {
+            TextView fallback = new TextView(this);
+            fallback.setPadding(24, 40, 24, 24);
+            fallback.setText(details);
+            setContentView(fallback);
+        }
     }
 
     private void checkAndAnalyze() {

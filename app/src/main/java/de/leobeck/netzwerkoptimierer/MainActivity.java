@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
         shape.setColor(color);
         shape.setCornerRadius(5f * getResources().getDisplayMetrics().density);
         button.setBackground(shape);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, 100 * getResources().getDisplayMetrics().density, 1f);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, (int) (100 * getResources().getDisplayMetrics().density), 1f);
         params.setMargins(4, 6, 4, 6);
         row.addView(button, params);
     }

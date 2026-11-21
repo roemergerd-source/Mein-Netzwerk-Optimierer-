@@ -62,41 +62,57 @@ public class MainActivity extends Activity {
         floorPicker.setAdapter(floorAdapter);
         floorPicker.setSelection(1);
         root.addView(floorPicker);
+        TextView safety = new TextView(this);
+        safety.setText("ANALYSEMODUS · Router bleibt unverändert");
+        safety.setTextColor(Color.rgb(20,105,70));
+        safety.setPadding(0,12,0,12);
+        root.addView(safety);
         Button profileButton = new Button(this);
         profileButton.setText("Deco-Analyseprofil einstellen");
         root.addView(profileButton);
         profileButton.setOnClickListener(v -> showAnalysisProfile());
         Button scan = new Button(this);
-        scan.setText("WLAN analysieren");
+        scan.setText("WLAN jetzt messen");
         root.addView(scan);
         Button optimize = new Button(this);
-        optimize.setText("Mesh bewerten und Optimierung planen");
+        optimize.setText("Mesh und Empfang bewerten");
         root.addView(optimize);
         Button channelsButton = new Button(this);
-        channelsButton.setText("Kanäle und WLAN optimieren");
+        channelsButton.setText("Kanalbelegung analysieren");
         root.addView(channelsButton);
         Button protocolButton = new Button(this);
-        protocolButton.setText("Deco-Direktsteuerung prüfen (Test)");
+        protocolButton.setText("Erweiterte Diagnose: Deco-Ports prüfen");
         root.addView(protocolButton);
         Button decoButton = new Button(this);
-        decoButton.setText("Deco-Netzwerk jetzt optimieren");
+        decoButton.setText("Deco-App öffnen (manuelle Einstellungen)");
         root.addView(decoButton);
         Button baseline = new Button(this);
-        baseline.setText("Messung vor Optimierung speichern");
+        baseline.setText("Vergleich: Ausgangsmessung speichern");
         root.addView(baseline);
         Button after = new Button(this);
-        after.setText("Ergebnis nach Optimierung vergleichen");
+        after.setText("Vergleich: Neue Messung auswerten");
         root.addView(after);
         Button compare = new Button(this);
-        compare.setText("Etagen vergleichen");
+        compare.setText("Messorte vergleichen");
         root.addView(compare);
         Button settings = new Button(this);
         settings.setText("WLAN-Einstellungen öffnen");
         root.addView(settings);
+        Button share = new Button(this);
+        share.setText("Messbericht teilen");
+        root.addView(share);
+        share.setOnClickListener(v -> shareReport());
         report = new TextView(this);
         report.setTextSize(16); report.setTextColor(Color.rgb(25,35,45));
+        report.setTextIsSelectable(true);
         report.setPadding(0,20,0,20);
         report.setText("Tippe auf „WLAN analysieren“. Für die Anzeige benachbarter Netze sind Standortberechtigung und aktivierte Standortdienste erforderlich.");
+        TextView reportTitle = new TextView(this);
+        reportTitle.setText("MESSBERICHT");
+        reportTitle.setTextSize(20);
+        reportTitle.setTextColor(Color.rgb(20,45,80));
+        reportTitle.setPadding(0,20,0,0);
+        root.addView(reportTitle);
         root.addView(report);
         ScrollView page = new ScrollView(this);
         page.setFillViewport(true);
@@ -125,6 +141,16 @@ public class MainActivity extends Activity {
         after.setOnClickListener(v -> compareOptimization());
         compare.setOnClickListener(v -> showFloorComparison());
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+    }
+
+    private void shareReport() {
+        String content = report == null ? "" : report.getText().toString();
+        if (content.trim().isEmpty()) return;
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, "Mein Netzwerk-Optimierer – Messbericht");
+        send.putExtra(Intent.EXTRA_TEXT, content);
+        startActivity(Intent.createChooser(send, "Messbericht teilen"));
     }
 
     private void probeDecoProtocol() {
@@ -359,6 +385,10 @@ public class MainActivity extends Activity {
             out.append("Jüngster Scan-Eintrag: vor ca. ").append(ageSeconds).append(" Sekunden\n");
         }
         out.append("Scan angefordert: ").append(requested ? "ja (Ergebnisse können älter sein)" : "nein / durch Android begrenzt").append("\n");
+        if (newestTimestamp > 0) {
+            long age = Math.max(0, (android.os.SystemClock.elapsedRealtimeNanos() / 1000L - newestTimestamp) / 1000000L);
+            if (age > 120) out.append("ACHTUNG: Scan-Ergebnisse älter als 2 Minuten – Kanalwerte nur eingeschränkt brauchbar.\n");
+        }
         SharedPreferences profile = getSharedPreferences("analysis_profile", MODE_PRIVATE);
         out.append("Dokumentierte Deco-Bandbreite: 2,4 GHz ").append(profile.getString("w24", "20 MHz"))
             .append("; 5 GHz ").append(profile.getString("w5", "160 MHz")).append("\n");

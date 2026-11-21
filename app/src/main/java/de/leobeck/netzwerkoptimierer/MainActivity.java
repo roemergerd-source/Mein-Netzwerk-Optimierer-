@@ -203,9 +203,11 @@ public class MainActivity extends Activity {
                     boolean tcp20001 = canConnect(host, 20001);
                     boolean tcp30001 = canConnect(host, 30001);
                     boolean tcp22 = canConnect(host, 22);
+                    String httpStatus = http ? readHttpStatus(host) : "Port geschlossen";
                     String message = "DECO X50 – DIREKTSTEUERUNG VORPRÜFUNG\nFirmware: 1.11.1 Build 26081714 Rel. 32981\nHardware-Version: EU/1.0\n\n"
                         + "Deco-IP: " + host
                         + "\nHTTP (80): " + (http ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\nHTTP-Status (GET /): " + httpStatus
                         + "\nHTTPS (443): " + (https ? "TCP erreichbar" : "nicht erreichbar")
                         + "\nPort 20001: " + (tcp20001 ? "TCP erreichbar" : "nicht erreichbar")
                         + "\nPort 30001: " + (tcp30001 ? "TCP erreichbar" : "nicht erreichbar")
@@ -215,6 +217,37 @@ public class MainActivity extends Activity {
                     runOnUiThread(() -> report.setText(message));
                 }).start();
             }).show();
+    }
+
+    // Unauthenticated, read-only probe of the HTTP root path. Never send credentials.
+    // A response does not establish support for any management API.
+    private String readHttpStatus(String host) {
+        java.net.Socket socket = new java.net.Socket();
+        try {
+            socket.connect(new java.net.InetSocketAddress(host, 80), 1500);
+            socket.setSoTimeout(1500);
+            java.io.OutputStream out = socket.getOutputStream();
+            out.write(("GET / HTTP/1.1\\r\\nHost: " + host
+                + "\\r\\nConnection: close\\r\\nAccept: */*\\r\\n\\r\\n")
+                .getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+            out.flush();
+            java.io.InputStream in = socket.getInputStream();
+            java.io.ByteArrayOutputStream first = new java.io.ByteArrayOutputStream();
+            for (int i = 0; i < 160; i++) {
+                int c = in.read();
+                if (c == -1 || c == '\\n') break;
+                if (c != '\\r') first.write(c);
+            }
+            String line = first.toString("US-ASCII").trim();
+            if (line.matches("HTTP/1\\.[01] [0-9]{3}.*")) {
+                return line.replaceAll("[^\\x20-\\x7E]", "").substring(0, Math.min(90, line.length()));
+            }
+            return "Keine gültige HTTP-Statuszeile";
+        } catch (Exception e) {
+            return "Keine HTTP-Antwort (" + e.getClass().getSimpleName() + ")";
+        } finally {
+            try { socket.close(); } catch (Exception ignored) {}
+        }
     }
 
     private boolean canConnect(String host, int port) {

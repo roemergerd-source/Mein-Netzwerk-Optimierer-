@@ -57,22 +57,26 @@ public class MainActivity extends Activity {
         root.addView(button, params);
     }
 
-    private void addGridButton(LinearLayout row, Button button, int color) {
+    private void addGridButton(android.widget.GridLayout grid, Button button, int row, int column, int color) {
+        float density = getResources().getDisplayMetrics().density;
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int cellWidth = (screenWidth - (int)(60 * density)) / 2;
         button.setAllCaps(false);
         button.setTextSize(15);
         button.setTextColor(Color.WHITE);
         button.setGravity(android.view.Gravity.CENTER);
-        button.setMinHeight(96);
-        button.setMinimumHeight(96);
         button.setMaxLines(3);
-        button.setPadding(10, 12, 10, 12);
+        button.setPadding((int)(6*density), (int)(8*density), (int)(6*density), (int)(8*density));
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(color);
-        shape.setCornerRadius(5f * getResources().getDisplayMetrics().density);
+        shape.setCornerRadius(4 * density);
         button.setBackground(shape);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, (int) (100 * getResources().getDisplayMetrics().density), 1f);
-        params.setMargins(4, 6, 4, 6);
-        row.addView(button, params);
+        android.widget.GridLayout.LayoutParams params = new android.widget.GridLayout.LayoutParams(
+            android.widget.GridLayout.spec(row), android.widget.GridLayout.spec(column));
+        params.width = cellWidth;
+        params.height = (int)(92 * density);
+        params.setMargins((int)(3*density), (int)(5*density), (int)(3*density), (int)(5*density));
+        grid.addView(button, params);
     }
 
     private TextView makeLamp(String label, int color) {
@@ -99,7 +103,13 @@ public class MainActivity extends Activity {
         TextView info = new TextView(this);
         info.setText("WLAN-Analyse und Empfehlungen – ohne Werbung");
         info.setTextColor(Color.rgb(175, 198, 224));
-        info.setPadding(0,12,0,22); root.addView(info);
+        info.setPadding(0,12,0,8); root.addView(info);
+        TextView buildLabel = new TextView(this);
+        buildLabel.setText("Oberfläche 2.2 · 2×2-Raster");
+        buildLabel.setTextSize(12);
+        buildLabel.setTextColor(Color.rgb(119, 186, 255));
+        buildLabel.setPadding(0, 0, 0, 14);
+        root.addView(buildLabel);
         TextView floorLabel = new TextView(this);
         floorLabel.setText("Messort auswählen:");
         floorLabel.setTextColor(Color.WHITE);
@@ -158,16 +168,15 @@ public class MainActivity extends Activity {
         Button channelsButton = new Button(this);
         channelsButton.setText("Kanalbelegung analysieren");
         
-        LinearLayout firstRow = new LinearLayout(this);
-        firstRow.setOrientation(LinearLayout.HORIZONTAL);
-        root.addView(firstRow);
-        addGridButton(firstRow, profileButton, Color.rgb(166, 91, 16));
-        addGridButton(firstRow, scan, Color.rgb(0, 116, 204));
-        LinearLayout secondRow = new LinearLayout(this);
-        secondRow.setOrientation(LinearLayout.HORIZONTAL);
-        root.addView(secondRow);
-        addGridButton(secondRow, optimize, Color.rgb(104, 55, 174));
-        addGridButton(secondRow, channelsButton, Color.rgb(0, 132, 91));
+        android.widget.GridLayout actionsGrid = new android.widget.GridLayout(this);
+        actionsGrid.setColumnCount(2);
+        actionsGrid.setRowCount(2);
+        actionsGrid.setAlignmentMode(android.widget.GridLayout.ALIGN_BOUNDS);
+        root.addView(actionsGrid, new LinearLayout.LayoutParams(-1, -2));
+        addGridButton(actionsGrid, profileButton, 0, 0, Color.rgb(166, 91, 16));
+        addGridButton(actionsGrid, scan, 0, 1, Color.rgb(0, 116, 204));
+        addGridButton(actionsGrid, optimize, 1, 0, Color.rgb(104, 55, 174));
+        addGridButton(actionsGrid, channelsButton, 1, 1, Color.rgb(0, 132, 91));
         TextView advancedTitle = new TextView(this);
         advancedTitle.setText("ERWEITERTE FUNKTIONEN");
         advancedTitle.setTextSize(14);

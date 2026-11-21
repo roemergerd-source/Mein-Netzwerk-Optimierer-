@@ -150,10 +150,10 @@ public class MainActivity extends Activity {
         out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\n");
         out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite.\n");
         out.append("\nDECO-MESH-OPTIMIERUNGSPLAN\n");
-        out.append("Konfiguration: Starlink per LAN am X50; 6 X1500 drahtlos. Keller: 2 X1500 (einer versorgt Enpal per LAN). Erdgeschoss: 3 X1500. Obergeschoss: 1 X1500. Standort des X50 noch nicht angegeben.\n");
+        out.append("Konfiguration: Starlink per LAN am X50; 6 X1500 drahtlos. Keller: 2 X1500 (einer versorgt Enpal per LAN). Erdgeschoss: 3 X1500. Obergeschoss: 1 X1500. X50 steht im Erdgeschoss.\n");
         out.append("1. In der Deco-App unter Netzwerkoptimierung einen Scan starten (falls verfügbar).\n");
         out.append("2. Keller: Mesh-Signal beider X1500 prüfen; der per LAN angeschlossene Enpal-Client braucht eine stabile Verbindung seines X1500 zum Mesh.\n");
-        out.append("3. Erdgeschoss: Drei X1500 auf Überlappung und Backhaul-Qualität prüfen; nur ein Gerät nach dem anderen umstellen.\n");
+        out.append("3. Erdgeschoss: Haupt-Deco X50 plus drei X1500. Überlappung und Backhaul-Qualität prüfen; nur ein Gerät nach dem anderen umstellen.\n");
         out.append("4. Obergeschoss: Empfang und Mesh-Uplink des einzelnen X1500 prüfen. Nach jeder Änderung am gleichen Standort erneut messen.\n");
         out.append("5. Bei mehreren Funkstrecken kann die nutzbare Datenrate sinken. Wenn möglich, später kabelgebundenen Backhaul prüfen; Enpal-LAN ist kein Backhaul.\n");
         out.append("Hinweis: Diese App kann Deco-Einstellungen nicht selbst ändern und kann den Mesh-Backhaul nicht vollständig messen. Kanalvorschläge sind nur Testkandidaten.\n");

@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
         android.content.SharedPreferences prefs = getSharedPreferences("deco_settings", MODE_PRIVATE);
         address.setText(prefs.getString("main_deco_ip", "192.168.2.220"));
         new android.app.AlertDialog.Builder(this)
-            .setTitle("Haupt-Deco X50 prüfen")
+            .setTitle("Haupt-Deco X50 lokal prüfen")
             .setMessage("IP-Adresse aus der Deco-App (Büro / Haupt). Es werden ausschließlich TCP-Verbindungen getestet; keine Anmeldung und keine Änderungen.")
             .setView(address)
             .setNegativeButton("Abbrechen", null)
@@ -198,12 +198,16 @@ public class MainActivity extends Activity {
                     boolean http = canConnect(host, 80);
                     boolean https = canConnect(host, 443);
                     boolean tcp20001 = canConnect(host, 20001);
+                    boolean tcp30001 = canConnect(host, 30001);
+                    boolean tcp22 = canConnect(host, 22);
                     String message = "DECO X50 – DIREKTSTEUERUNG VORPRÜFUNG\n\n"
                         + "Deco-IP: " + host
                         + "\nHTTP (80): " + (http ? "TCP erreichbar" : "nicht erreichbar")
                         + "\nHTTPS (443): " + (https ? "TCP erreichbar" : "nicht erreichbar")
                         + "\nPort 20001: " + (tcp20001 ? "TCP erreichbar" : "nicht erreichbar")
-                        + "\n\nEin offener Port beweist keine unterstützte Deco-Steuerung. Ein geschlossener Port schließt andere Schnittstellen nicht aus."
+                        + "\nPort 30001: " + (tcp30001 ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\nPort 22: " + (tcp22 ? "TCP erreichbar" : "nicht erreichbar")
+                        + "\n\nEin offener Port beweist keine unterstützte Deco-Steuerung. Ein geschlossener Port schließt andere Schnittstellen nicht aus. Direkte Schreibbefehle bleiben deaktiviert, bis Anmeldung und Firmware-Kompatibilität überprüft wurden."
                         + "\n\nEs wurden keine Router-Einstellungen geändert. Für eine echte Kanaloptimierung muss zuerst ein kompatibler, autorisierter Steuerungsweg bestätigt werden.";
                     runOnUiThread(() -> report.setText(message));
                 }).start();

@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
         }
         out.append("Sichtbare Zugangspunkte: ").append(results.size()).append("\n");
         out.append("Scan angefordert: ").append(requested ? "ja (Ergebnisse können älter sein)" : "nein / durch Android begrenzt").append("\n");
-        out.append("Kanalbelegung (Zugangspunkte):\\n");
+        out.append("Kanalbelegung (Zugangspunkte):\n");
         for (Map.Entry<Integer,Integer> e : channels.entrySet())
             out.append("Kanal ").append(e.getKey()).append(": ").append(e.getValue()).append("\n");
 
@@ -145,10 +145,10 @@ public class MainActivity extends Activity {
         int[] candidates5 = {36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140};
         int best24 = bestChannel(results, candidates24, true);
         int best5 = bestChannel(results, candidates5, false);
-        out.append("\nAUTOMATISCHE AUSWERTUNG\\n");
-        out.append("2,4 GHz: Kanal ").append(best24).append(" als Testkandidat (20 MHz).\\n");
-        out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\\n");
-        out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite.\\n");
+        out.append("\nAUTOMATISCHE AUSWERTUNG\n");
+        out.append("2,4 GHz: Kanal ").append(best24).append(" als Testkandidat (20 MHz).\n");
+        out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\n");
+        out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite.\n");
         out.append("\nDECO-MESH-OPTIMIERUNGSPLAN\n");
         out.append("Konfiguration: 1 Deco X50 und 6 Deco X1500, alle X1500 per WLAN-Backhaul.\n");
         out.append("1. In der Deco-App unter Netzwerkoptimierung einen Scan starten (falls verfügbar).\n");

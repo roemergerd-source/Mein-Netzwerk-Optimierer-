@@ -44,13 +44,15 @@ public class MainActivity extends Activity {
     /** Compact, readable controls that do not force uppercase labels. */
     private void addCompactButton(LinearLayout root, Button button) {
         button.setAllCaps(false);
-        button.setTextSize(14);
+        button.setTextSize(16);
+        button.setTextColor(Color.WHITE);
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(36, 75, 127)));
         button.setMinHeight(0);
         button.setMinimumHeight(0);
-        button.setPadding(12, 8, 12, 8);
+        button.setPadding(18, 15, 18, 15);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, 2, 0, 2);
+        params.setMargins(0, 5, 0, 5);
         root.addView(button, params);
     }
 
@@ -59,28 +61,39 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setFitsSystemWindows(true);
-        root.setPadding(28, 32, 28, 24);
-        root.setBackgroundColor(Color.rgb(245,248,252));
+        root.setPadding(22, 28, 22, 32);
+        root.setBackgroundColor(Color.rgb(12, 22, 37));
         TextView title = new TextView(this);
         title.setText("Mein Netzwerk-Optimierer");
-        title.setTextSize(24); title.setTextColor(Color.rgb(20,45,80));
+        title.setTextSize(25); title.setTypeface(null, android.graphics.Typeface.BOLD); title.setTextColor(Color.WHITE);
         root.addView(title);
         TextView info = new TextView(this);
         info.setText("WLAN-Analyse und Empfehlungen – ohne Werbung");
-        info.setPadding(0,14,0,18); root.addView(info);
+        info.setTextColor(Color.rgb(175, 198, 224));
+        info.setPadding(0,12,0,22); root.addView(info);
         TextView floorLabel = new TextView(this);
         floorLabel.setText("Messort auswählen:");
+        floorLabel.setTextColor(Color.WHITE);
+        floorLabel.setTextSize(17);
         root.addView(floorLabel);
         floorPicker = new Spinner(this);
         ArrayAdapter<String> floorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Keller", "Erdgeschoss", "Obergeschoss", "Büro", "Raum Satellit 1", "Flur", "Garten", "Nebengebäude"});
         floorPicker.setAdapter(floorAdapter);
         floorPicker.setSelection(1);
+        floorPicker.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(119, 172, 239)));
         root.addView(floorPicker);
         TextView safety = new TextView(this);
         safety.setText("ANALYSEMODUS · Router bleibt unverändert");
-        safety.setTextColor(Color.rgb(20,105,70));
+        safety.setTextColor(Color.rgb(90, 225, 165));
         safety.setPadding(0,12,0,12);
         root.addView(safety);
+        TextView section = new TextView(this);
+        section.setText("MESSEN & AUSWERTEN");
+        section.setTextSize(14);
+        section.setTypeface(null, android.graphics.Typeface.BOLD);
+        section.setTextColor(Color.rgb(119, 186, 255));
+        section.setPadding(0, 14, 0, 8);
+        root.addView(section);
         Button profileButton = new Button(this);
         profileButton.setText("Deco-Analyseprofil einstellen");
         addCompactButton(root, profileButton);
@@ -94,6 +107,13 @@ public class MainActivity extends Activity {
         Button channelsButton = new Button(this);
         channelsButton.setText("Kanalbelegung analysieren");
         addCompactButton(root, channelsButton);
+        TextView advancedTitle = new TextView(this);
+        advancedTitle.setText("ERWEITERTE FUNKTIONEN");
+        advancedTitle.setTextSize(14);
+        advancedTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+        advancedTitle.setTextColor(Color.rgb(119, 186, 255));
+        advancedTitle.setPadding(0, 22, 0, 8);
+        root.addView(advancedTitle);
         Button protocolButton = new Button(this);
         protocolButton.setText("Erweiterte Diagnose: Deco-Ports prüfen");
         addCompactButton(root, protocolButton);
@@ -121,14 +141,14 @@ public class MainActivity extends Activity {
         addCompactButton(root, share);
         share.setOnClickListener(v -> shareReport());
         report = new TextView(this);
-        report.setTextSize(16); report.setTextColor(Color.rgb(25,35,45));
+        report.setTextSize(17); report.setTextColor(Color.WHITE);
         report.setTextIsSelectable(true);
         report.setPadding(0,20,0,20);
-        report.setText("Tippe auf „WLAN analysieren“. Für die Anzeige benachbarter Netze sind Standortberechtigung und aktivierte Standortdienste erforderlich.");
+        report.setText("Tippe auf „WLAN jetzt messen“. Für die Anzeige benachbarter Netze sind Standortberechtigung und aktivierte Standortdienste erforderlich.");
         TextView reportTitle = new TextView(this);
         reportTitle.setText("MESSBERICHT");
         reportTitle.setTextSize(20);
-        reportTitle.setTextColor(Color.rgb(20,45,80));
+        reportTitle.setTextColor(Color.rgb(119, 186, 255));
         reportTitle.setPadding(0,20,0,0);
         root.addView(reportTitle);
         root.addView(report);

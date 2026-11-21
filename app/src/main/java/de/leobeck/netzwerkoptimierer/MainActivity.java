@@ -633,7 +633,7 @@ public class MainActivity extends Activity {
                     .putBoolean("exclude", exclude.isChecked()).apply();
                 report.setText("Profil gespeichert: 2,4 GHz " + w24.getSelectedItem()
                     + ", 5 GHz " + w5.getSelectedItem()
-                    + ".\\nKeine Router-Einstellungen geändert.");
+                    + ".\nKeine Router-Einstellungen geändert.");
             }).show();
     }
 

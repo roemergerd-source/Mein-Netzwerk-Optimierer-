@@ -85,7 +85,7 @@ public class MainActivity extends Activity {
             catch (Throwable error) { showFailure("WLAN-Analyse fehlgeschlagen", error); }
         });
         optimize.setOnClickListener(v -> {
-            try { checkAndAnalyze(); }
+            try { meshMode = true; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("Mesh-Bewertung fehlgeschlagen", error); }
         });
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
@@ -142,7 +142,7 @@ public class MainActivity extends Activity {
         List<ScanResult> results = wifi.getScanResults();
         if (results == null) results = Collections.emptyList();
         Map<Integer,Integer> channels = new TreeMap<>();
-        String ownSsid = current == null ? "" : current.getSSID().replace("\\\"", "").trim();
+        String ownSsid = current == null ? "" : current.getSSID().replace((char)34, ' ').trim();
         int ownCount = 0;
         int otherCount = 0;
         long newestTimestamp = 0;

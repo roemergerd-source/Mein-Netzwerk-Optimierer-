@@ -83,6 +83,25 @@ public class MainActivity extends Activity {
         grid.addView(button, params);
     }
 
+    private void setActiveAction(Button active, Button profile, Button scan, Button mesh, Button channels) {
+        Button[] buttons = {profile, scan, mesh, channels};
+        int[] colors = {Color.rgb(166,91,16), Color.rgb(0,116,204), Color.rgb(104,55,174), Color.rgb(0,132,91)};
+        String[] labels = {"Deco-Analyseprofil einstellen", "WLAN jetzt messen", "Mesh und Empfang bewerten", "Kanalbelegung analysieren"};
+        float density = getResources().getDisplayMetrics().density;
+        for (int i = 0; i < buttons.length; i++) {
+            Button button = buttons[i];
+            boolean selected = button == active;
+            android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+            bg.setColor(colors[i]);
+            bg.setCornerRadius(4 * density);
+            bg.setStroke((int)((selected ? 4 : 1) * density), selected ? Color.WHITE : colors[i]);
+            button.setBackground(bg);
+            button.setText((selected ? "✓ AKTIV\n" : "") + labels[i]);
+            button.setTextSize(selected ? 14 : 15);
+            button.setSelected(selected);
+        }
+    }
+
     private TextView makeLamp(String label, int color) {
         TextView lamp = new TextView(this);
         lamp.setText(label);
@@ -109,7 +128,7 @@ public class MainActivity extends Activity {
         info.setTextColor(Color.rgb(175, 198, 224));
         info.setPadding(0,12,0,8); root.addView(info);
         TextView buildLabel = new TextView(this);
-        buildLabel.setText("Version 2.4 · Messampel");
+        buildLabel.setText("Version 2.5 · Lesbarkeit & aktive Analyse");
         buildLabel.setTextSize(12);
         buildLabel.setTextColor(Color.rgb(119, 186, 255));
         buildLabel.setPadding(0, 0, 0, 14);
@@ -163,7 +182,7 @@ public class MainActivity extends Activity {
         Button profileButton = new Button(this);
         profileButton.setText("Deco-Analyseprofil einstellen");
         
-        profileButton.setOnClickListener(v -> showAnalysisProfile());
+        profileButton.setOnClickListener(v -> { setActiveAction(profileButton, profileButton, scan, optimize, channelsButton); showAnalysisProfile(); });
         Button scan = new Button(this);
         scan.setText("WLAN jetzt messen");
         
@@ -230,6 +249,10 @@ public class MainActivity extends Activity {
         report = new TextView(this);
         report.setTextSize(17); report.setTextColor(Color.WHITE);
         report.setTextIsSelectable(true);
+        report.setHorizontallyScrolling(false);
+        report.setHorizontalScrollBarEnabled(false);
+        report.setBreakStrategy(android.text.Layout.BREAK_STRATEGY_HIGH_QUALITY);
+        report.setHyphenationFrequency(android.text.Layout.HYPHENATION_FREQUENCY_NORMAL);
         report.setPadding(0,20,0,20);
         report.setText("Tippe auf „WLAN jetzt messen“. Für die Anzeige benachbarter Netze sind Standortberechtigung und aktivierte Standortdienste erforderlich.");
         TextView reportTitle = new TextView(this);
@@ -289,6 +312,8 @@ public class MainActivity extends Activity {
         });
         ScrollView page = new ScrollView(this);
         page.setFillViewport(true);
+        page.setHorizontalScrollBarEnabled(false);
+        page.setOverScrollMode(View.OVER_SCROLL_NEVER);
         page.setClipToPadding(false);
         page.setPadding(0, 0, 0, 48);
         page.addView(root);
@@ -298,15 +323,19 @@ public class MainActivity extends Activity {
             report.setText("Vorheriger Absturz:\n" + lastCrash);
             getSharedPreferences("diagnostics", MODE_PRIVATE).edit().remove("lastCrash").apply();
         }
+        setActiveAction(scan, profileButton, scan, optimize, channelsButton);
         scan.setOnClickListener(v -> {
+            setActiveAction(scan, profileButton, scan, optimize, channelsButton);
             try { meshMode = false; channelMode = false; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("WLAN-Analyse fehlgeschlagen", error); }
         });
         optimize.setOnClickListener(v -> {
+            setActiveAction(optimize, profileButton, scan, optimize, channelsButton);
             try { meshMode = true; channelMode = false; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("Mesh-Bewertung fehlgeschlagen", error); }
         });
         channelsButton.setOnClickListener(v -> {
+            setActiveAction(channelsButton, profileButton, scan, optimize, channelsButton);
             try { meshMode = false; channelMode = true; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("Kanaloptimierung fehlgeschlagen", error); }
         });

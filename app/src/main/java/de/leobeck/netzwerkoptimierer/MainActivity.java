@@ -21,6 +21,8 @@ import java.util.*;
 public class MainActivity extends Activity {
     private WifiManager wifi;
     private TextView report;
+    private Spinner floorPicker;
+    private boolean meshMode = false;
     private final int permissionRequest = 42;
 
     @Override public void onCreate(Bundle state) {
@@ -49,6 +51,14 @@ public class MainActivity extends Activity {
         TextView info = new TextView(this);
         info.setText("WLAN-Analyse und Empfehlungen – ohne Werbung");
         info.setPadding(0,14,0,18); root.addView(info);
+        TextView floorLabel = new TextView(this);
+        floorLabel.setText("Messort auswählen:");
+        root.addView(floorLabel);
+        floorPicker = new Spinner(this);
+        ArrayAdapter<String> floorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Keller", "Erdgeschoss", "Obergeschoss"});
+        floorPicker.setAdapter(floorAdapter);
+        floorPicker.setSelection(1);
+        root.addView(floorPicker);
         Button scan = new Button(this);
         scan.setText("WLAN analysieren");
         root.addView(scan);
@@ -71,7 +81,7 @@ public class MainActivity extends Activity {
             getSharedPreferences("diagnostics", MODE_PRIVATE).edit().remove("lastCrash").apply();
         }
         scan.setOnClickListener(v -> {
-            try { checkAndAnalyze(); }
+            try { meshMode = false; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("WLAN-Analyse fehlgeschlagen", error); }
         });
         optimize.setOnClickListener(v -> {
@@ -116,11 +126,14 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     private void analyze() {
         if (!wifi.isWifiEnabled()) { report.setText("WLAN ist ausgeschaltet. Bitte aktiviere WLAN."); return; }
-        StringBuilder out = new StringBuilder("Deco Mesh: Starlink → X50 (LAN) → 6 × X1500 (WLAN)\nWLAN-Umgebung\n\n");
+        String floor = floorPicker.getSelectedItem().toString();
+        StringBuilder out = new StringBuilder("MEIN NETZWERK-OPTIMIERER\nMessort: " + floor + "\n" + (meshMode ? "MESH-BEWERTUNG" : "WLAN-ANALYSE") + "\n\n");
         WifiInfo current = wifi.getConnectionInfo();
         if (current != null) {
             out.append("Verbindung: ").append(current.getSSID()).append("\n");
-            out.append("Signal: ").append(current.getRssi()).append(" dBm\n");
+            int rssi = current.getRssi();
+            String rating = rssi >= -55 ? "Sehr gut" : rssi >= -67 ? "Gut" : rssi >= -75 ? "Mittel" : "Schwach";
+            out.append("Signal: ").append(rssi).append(" dBm – ").append(rating).append("\n");
             out.append("Frequenz: ").append(current.getFrequency()).append(" MHz\n");
             out.append("Linkrate: ").append(current.getLinkSpeed()).append(" Mbit/s\n\n");
         }
@@ -129,11 +142,23 @@ public class MainActivity extends Activity {
         List<ScanResult> results = wifi.getScanResults();
         if (results == null) results = Collections.emptyList();
         Map<Integer,Integer> channels = new TreeMap<>();
+        String ownSsid = current == null ? "" : current.getSSID().replace("\\\"", "").trim();
+        int ownCount = 0;
+        int otherCount = 0;
+        long newestTimestamp = 0;
         for (ScanResult r : results) {
+            if (r.SSID != null && r.SSID.equals(ownSsid)) ownCount++; else otherCount++;
+            newestTimestamp = Math.max(newestTimestamp, r.timestamp);
             int ch = channel(r.frequency);
             if (ch > 0) channels.put(ch, channels.getOrDefault(ch,0)+1);
         }
         out.append("Sichtbare Zugangspunkte: ").append(results.size()).append("\n");
+        out.append("Gleiche SSID (möglicherweise eigenes Mesh): ").append(ownCount).append("\n");
+        out.append("Andere/verborgene SSIDs: ").append(otherCount).append("\n");
+        if (newestTimestamp > 0) {
+            long ageSeconds = Math.max(0, (android.os.SystemClock.elapsedRealtimeNanos() / 1000L - newestTimestamp) / 1000000L);
+            out.append("Jüngster Scan-Eintrag: vor ca. ").append(ageSeconds).append(" Sekunden\n");
+        }
         out.append("Scan angefordert: ").append(requested ? "ja (Ergebnisse können älter sein)" : "nein / durch Android begrenzt").append("\n");
         out.append("Kanalbelegung (Zugangspunkte):\n");
         for (Map.Entry<Integer,Integer> e : channels.entrySet())
@@ -149,13 +174,22 @@ public class MainActivity extends Activity {
         out.append("2,4 GHz: Kanal ").append(best24).append(" als Testkandidat (20 MHz).\n");
         out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\n");
         out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite.\n");
+        if (!meshMode) {
+            out.append("\nTipp: Für Etagenhinweise bitte \"Mesh bewerten\" wählen.\n");
+            report.setText(out.toString());
+            return;
+        }
         out.append("\nDECO-MESH-OPTIMIERUNGSPLAN\n");
+        if ("Keller".equals(floor)) out.append("Messort Keller: Besonders die Verbindung zum Enpal-Deco und die Stabilität prüfen.\n");
+        else if ("Obergeschoss".equals(floor)) out.append("Messort Obergeschoss: Uplink zum Erdgeschoss und Signal in entfernten Räumen prüfen.\n");
+        else out.append("Messort Erdgeschoss: X50 und drei X1500 auf sinnvolle Abstände prüfen.\n");
         out.append("Konfiguration: Starlink per LAN am X50; 6 X1500 drahtlos. Keller: 2 X1500 (einer versorgt Enpal per LAN). Erdgeschoss: 3 X1500. Obergeschoss: 1 X1500. X50 steht im Erdgeschoss.\n");
         out.append("1. In der Deco-App unter Netzwerkoptimierung einen Scan starten (falls verfügbar).\n");
         out.append("2. Keller: Mesh-Signal beider X1500 prüfen; der per LAN angeschlossene Enpal-Client braucht eine stabile Verbindung seines X1500 zum Mesh.\n");
         out.append("3. Erdgeschoss: Haupt-Deco X50 plus drei X1500. Überlappung und Backhaul-Qualität prüfen; nur ein Gerät nach dem anderen umstellen.\n");
         out.append("4. Obergeschoss: Empfang und Mesh-Uplink des einzelnen X1500 prüfen. Nach jeder Änderung am gleichen Standort erneut messen.\n");
         out.append("5. Bei mehreren Funkstrecken kann die nutzbare Datenrate sinken. Wenn möglich, später kabelgebundenen Backhaul prüfen; Enpal-LAN ist kein Backhaul.\n");
+        out.append("Gleiche SSID ist nur ein Hinweis, kein sicherer Nachweis für ein eigenes Deco-Gerät.\n");
         out.append("Hinweis: Diese App kann Deco-Einstellungen nicht selbst ändern und kann den Mesh-Backhaul nicht vollständig messen. Kanalvorschläge sind nur Testkandidaten.\n");
         report.setText(out.toString());
     }

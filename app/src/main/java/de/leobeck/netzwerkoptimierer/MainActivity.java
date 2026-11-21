@@ -347,6 +347,7 @@ public class MainActivity extends Activity {
         out.append("Sichtbare Zugangspunkte: ").append(results.size()).append("\n");
         out.append("Gleiche SSID (möglicherweise eigenes Mesh): ").append(ownCount).append("\n");
         out.append("Andere/verborgene SSIDs: ").append(otherCount).append("\n");
+        out.append("Hinweis: Mehrere BSSIDs mit gleichem Namen koennen zum selben Deco-Mesh gehoeren. Auch Android kann gespeicherte WLAN-Profile doppelt anzeigen. Diese Zaehlung beweist weder doppelte Router noch Funkstoerungen.\n");
         if (newestTimestamp > 0) {
             long ageSeconds = Math.max(0, (android.os.SystemClock.elapsedRealtimeNanos() / 1000L - newestTimestamp) / 1000000L);
             out.append("Jüngster Scan-Eintrag: vor ca. ").append(ageSeconds).append(" Sekunden\n");
@@ -365,7 +366,7 @@ public class MainActivity extends Activity {
         out.append("\nAUTOMATISCHE AUSWERTUNG\n");
         out.append("2,4 GHz: Kanal ").append(best24).append(" als Testkandidat (20 MHz).\n");
         out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\n");
-        out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite.\n");
+        out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite. Eigene Mesh-Funkmodule koennen die Kanalzaehlung beeinflussen; Kanalvorschlaege sind keine automatischen Router-Aenderungen.\n");
         if (channelMode) {
             appendChannelOptimization(out, results, current, ownSsid, newestTimestamp);
             report.setText(out.toString());

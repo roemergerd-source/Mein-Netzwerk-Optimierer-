@@ -283,17 +283,18 @@ public class MainActivity extends Activity {
         }
         out.append("Gleiche SSID: ").append(own).append(" | Andere SSIDs: ").append(foreign)
             .append(" | Verborgene: ").append(hidden).append("\n");
-        out.append("Gleiche SSID wird für die Kanalabschätzung separat betrachtet; sie kann trotzdem Funkkapazität beanspruchen.\n");
+        out.append("Gleiche SSID wird separat ausgewiesen; fremde/verborgene WLANs bestimmen den Vergleichsindex. Eigene Mesh-Funkmodule und versteckte SSIDs können die tatsächliche Belastung verändern.\n");
         int[] c24 = {1,6,11};
-        int[] c5 = {36,40,44,48};
+        int[] c5 = {36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140};
         out.append("\n2,4 GHz (20 MHz, Schätzung):\n");
         for (int ch : c24) out.append("Kanal ").append(ch).append(": Belastungsindex ")
             .append(String.format(java.util.Locale.GERMANY, "%.1f", channelScore(external, ch, true))).append("\n");
         out.append("Testkandidat: Kanal ").append(bestChannel(external, c24, true)).append("\n");
-        out.append("\n5 GHz (vereinfachte 20-MHz-Betrachtung):\n");
-        for (int ch : c5) out.append("Kanal ").append(ch).append(": Belastungsindex ")
+        out.append("\n5 GHz (Kanalbreiten aus Scan-Daten, soweit verfügbar):\n");
+        for (int ch : new int[]{36,40,44,48,100,104,108,112}) out.append("Kanal ").append(ch).append(": Belastungsindex ")
             .append(String.format(java.util.Locale.GERMANY, "%.1f", channelScore(external, ch, false))).append("\n");
-        out.append("Testkandidat: Kanal ").append(bestChannel(external, c5, false)).append("\n");
+        out.append("Testkandidat (20 MHz): Kanal ").append(bestChannel(external, c5, false)).append("\n");
+        out.append("Bei 80-MHz-Betrieb sind mehrere benachbarte 20-MHz-Kanäle gemeinsam belegt. Die tatsächliche Deco-Kanalbreite bitte in der Deco-App prüfen.\n");
         if (current != null) {
             int rssi = current.getRssi();
             if (rssi < -75) out.append("\nPRIORITÄT: Empfang schwach. Standort, Deco-Uplink und Roaming prüfen, bevor Kanäle verändert werden.\n");
@@ -311,14 +312,27 @@ public class MainActivity extends Activity {
 
     private double channelScore(List<ScanResult> results, int candidate, boolean band24) {
         double score = 0;
+        int candidateMhz = band24 ? 2407 + 5 * candidate : 5000 + 5 * candidate;
         for (ScanResult r : results) {
             boolean is24 = r.frequency >= 2400 && r.frequency < 2500;
             if (is24 != band24 || (!band24 && (r.frequency < 5000 || r.frequency >= 5900))) continue;
-            int other = channel(r.frequency);
-            if (other <= 0) continue;
-            int distance = Math.abs(candidate - other);
-            double overlap = band24 ? Math.max(0, 1.0 - distance / 5.0) :
-                (distance == 0 ? 1.0 : (distance < 4 ? 0.5 : 0.0));
+            int width = 20;
+            if (android.os.Build.VERSION.SDK_INT >= 23) {
+                if (r.channelWidth == ScanResult.CHANNEL_WIDTH_40MHZ) width = 40;
+                else if (r.channelWidth == ScanResult.CHANNEL_WIDTH_80MHZ) width = 80;
+                else if (r.channelWidth == ScanResult.CHANNEL_WIDTH_160MHZ) width = 160;
+                else if (r.channelWidth == ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ) width = 80;
+            }
+            int center = width > 20 && r.centerFreq0 > 0 ? r.centerFreq0 : r.frequency;
+            double separation = Math.abs(candidateMhz - center);
+            double overlap;
+            if (band24) {
+                overlap = Math.max(0, 1.0 - Math.abs(candidateMhz - r.frequency) / 25.0);
+            } else {
+                // An approximate spectral overlap between a 20 MHz candidate and a detected channel.
+                overlap = Math.max(0, (width / 2.0 + 10.0 - separation) / 20.0);
+                overlap = Math.min(1.0, overlap);
+            }
             double strength = Math.pow(10.0, (Math.max(-95, Math.min(-30, r.level)) + 95) / 25.0);
             score += overlap * strength;
         }
@@ -329,19 +343,7 @@ public class MainActivity extends Activity {
         int best = candidates[0];
         double lowest = Double.POSITIVE_INFINITY;
         for (int candidate : candidates) {
-            double score = 0;
-            for (ScanResult r : results) {
-                boolean is24 = r.frequency >= 2400 && r.frequency < 2500;
-                if (is24 != band24) continue;
-                int other = channel(r.frequency);
-                if (other <= 0) continue;
-                int distance = Math.abs(candidate - other);
-                // 2.4 GHz has broad overlap; 5 GHz 20 MHz centers are 4 channels apart.
-                double overlap = band24 ? Math.max(0, 1.0 - distance / 5.0) :
-                    (distance == 0 ? 1.0 : (distance < 4 ? 0.5 : 0.0));
-                double strength = Math.pow(10.0, (Math.max(-95, Math.min(-30, r.level)) + 95) / 25.0);
-                score += overlap * strength;
-            }
+            double score = channelScore(results, candidate, band24);
             // Prefer non-DFS 5 GHz channels on ties to avoid radar-related interruptions.
             if (!band24 && candidate >= 52) score += 0.001;
             if (score < lowest) { lowest = score; best = candidate; }

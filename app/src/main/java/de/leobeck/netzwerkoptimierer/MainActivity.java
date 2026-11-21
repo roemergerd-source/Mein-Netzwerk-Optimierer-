@@ -321,7 +321,6 @@ public class MainActivity extends Activity {
                 if (r.channelWidth == ScanResult.CHANNEL_WIDTH_40MHZ) width = 40;
                 else if (r.channelWidth == ScanResult.CHANNEL_WIDTH_80MHZ) width = 80;
                 else if (r.channelWidth == ScanResult.CHANNEL_WIDTH_160MHZ) width = 160;
-                else if (r.channelWidth == ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ) width = 80;
             }
             int center = width > 20 && r.centerFreq0 > 0 ? r.centerFreq0 : r.frequency;
             double separation = Math.abs(candidateMhz - center);

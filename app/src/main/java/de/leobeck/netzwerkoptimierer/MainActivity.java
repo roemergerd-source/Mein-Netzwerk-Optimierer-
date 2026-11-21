@@ -58,10 +58,14 @@ public class MainActivity extends Activity {
         floorLabel.setText("Messort auswählen:");
         root.addView(floorLabel);
         floorPicker = new Spinner(this);
-        ArrayAdapter<String> floorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Keller", "Erdgeschoss", "Obergeschoss"});
+        ArrayAdapter<String> floorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Keller", "Erdgeschoss", "Obergeschoss", "Büro", "Raum Satellit 1", "Flur", "Garten", "Nebengebäude"});
         floorPicker.setAdapter(floorAdapter);
         floorPicker.setSelection(1);
         root.addView(floorPicker);
+        Button profileButton = new Button(this);
+        profileButton.setText("Deco-Analyseprofil einstellen");
+        root.addView(profileButton);
+        profileButton.setOnClickListener(v -> showAnalysisProfile());
         Button scan = new Button(this);
         scan.setText("WLAN analysieren");
         root.addView(scan);
@@ -361,12 +365,13 @@ public class MainActivity extends Activity {
         // 2.4 GHz channels overlap even when their center channels differ.
         int[] candidates24 = {1,6,11};
         int[] candidates5 = {36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140};
-        int best24 = bestChannel(results, candidates24, true);
-        int best5 = bestChannel(results, candidates5, false);
+        List<ScanResult> external = externalNetworks(results, ownSsid);
+        int best24 = bestChannel(external, candidates24, true);
+        int best5 = bestChannel(external, candidates5, false);
         out.append("\nAUTOMATISCHE AUSWERTUNG\n");
         out.append("2,4 GHz: Kanal ").append(best24).append(" als Testkandidat (20 MHz).\n");
-        out.append("5 GHz: Kanal ").append(best5).append(" als Testkandidat; DFS-Kanäle können Radarprüfung erfordern.\n");
-        out.append("Bewertung berücksichtigt Signalstärke und Kanalüberlappung, aber nicht tatsächliche Airtime, Störquellen oder Router-Kanalbreite. Eigene Mesh-Funkmodule koennen die Kanalzaehlung beeinflussen; Kanalvorschlaege sind keine automatischen Router-Aenderungen.\n");
+        out.append("5 GHz: Kanal ").append(best5).append(" nur als 20-MHz-Orientierungswert; nicht als 80/160-MHz-Empfehlung. DFS kann Radarprüfung erfordern.\n");
+        out.append("Schätzung aus sichtbaren WLAN-Signalen, keine gemessene Airtime oder vollständige 80/160-MHz-Belegung. Eigene Mesh-Funkmodule koennen die Kanalzaehlung beeinflussen; Kanalvorschlaege sind keine automatischen Router-Aenderungen.\n");
         if (channelMode) {
             appendChannelOptimization(out, results, current, ownSsid, newestTimestamp);
             report.setText(out.toString());
@@ -381,7 +386,7 @@ public class MainActivity extends Activity {
         if ("Keller".equals(floor)) out.append("Messort Keller: Besonders die Verbindung zum Enpal-Deco und die Stabilität prüfen.\n");
         else if ("Obergeschoss".equals(floor)) out.append("Messort Obergeschoss: Hier steht kein Deco mehr. Empfang von den Geräten anderer Etagen prüfen; bei schwachem Signal zunächst Standort und Roaming kontrollieren.\n");
         else out.append("Messort Erdgeschoss: X50 und drei X1500 auf sinnvolle Abstände prüfen.\n");
-        out.append("Konfiguration: Starlink per LAN am X50; 5 X1500 drahtlos. Keller: 2 X1500 (einer versorgt Enpal per LAN). Erdgeschoss: X50 und 3 X1500. Obergeschoss: kein Deco.\n");
+        out.append("Setup: Starlink im Bypass-Modus, Deco X50 und sechs drahtlose X1500. Standorte und Uplink-Strecken in der Deco-App überprüfen.\n");
         out.append("1. In der Deco-App unter Netzwerkoptimierung einen Scan starten (falls verfügbar).\n");
         out.append("2. Keller: Mesh-Signal beider X1500 prüfen; der per LAN angeschlossene Enpal-Client braucht eine stabile Verbindung seines X1500 zum Mesh.\n");
         out.append("3. Erdgeschoss: Haupt-Deco X50 plus drei X1500. Überlappung und Backhaul-Qualität prüfen; nur ein Gerät nach dem anderen umstellen.\n");
@@ -411,7 +416,7 @@ public class MainActivity extends Activity {
     private void showFloorComparison() {
         SharedPreferences prefs = getSharedPreferences("floor_measurements", MODE_PRIVATE);
         StringBuilder out = new StringBuilder("ETAGENVERGLEICH\n\n");
-        String[] floors = {"Keller", "Erdgeschoss", "Obergeschoss"};
+        String[] floors = {"Keller", "Erdgeschoss", "Obergeschoss", "Büro", "Raum Satellit 1", "Flur", "Garten", "Nebengebäude"};
         String[] bssids = new String[floors.length];
         for (int i = 0; i < floors.length; i++) {
             String key = floors[i] + "_";
@@ -435,7 +440,7 @@ public class MainActivity extends Activity {
             out.append("Unterschiedliche verbundene BSSIDs: ").append(distinct.size()).append(" von 3 Messorten.\n");
             if (distinct.size() == 1) out.append("Alle drei Messungen zeigen denselben Zugangspunkt. Das kann auf fehlenden Wechsel des Handys zwischen Deco-Funkmodulen hindeuten.\n");
         }
-        out.append("\nHinweis: Gespeichert wird jeweils die letzte Messung pro Etage, nicht der genaue Raum. Die Etage wird manuell ausgewählt. BSSID identifiziert ein Funkmodul, nicht zwingend ein ganzes Deco-Gerät. WLAN-Linkrate ist kein Internet-Speedtest.");
+        out.append("\nHinweis: Gespeichert wird jeweils die letzte Messung pro ausgewähltem Messort. Die Etage wird manuell ausgewählt. BSSID identifiziert ein Funkmodul, nicht zwingend ein ganzes Deco-Gerät. WLAN-Linkrate ist kein Internet-Speedtest.");
         report.setText(out.toString());
     }
 
@@ -449,18 +454,17 @@ public class MainActivity extends Activity {
             Math.max(0, (android.os.SystemClock.elapsedRealtimeNanos() / 1000L - newestTimestamp) / 1000000L);
         if (age > 120) out.append("WARNUNG: Scan-Daten älter als zwei Minuten. Kanalempfehlung nur eingeschränkt aussagekräftig.\n");
         int own = 0, foreign = 0, hidden = 0;
-        List<ScanResult> external = new ArrayList<>();
+        List<ScanResult> external = externalNetworks(results, ownSsid);
         for (ScanResult r : results) {
             String ssid = r.SSID == null ? "" : r.SSID.trim();
             if (!ownSsid.isEmpty() && ownSsid.equals(ssid)) own++;
             else {
-                external.add(r);
                 if (ssid.isEmpty()) hidden++; else foreign++;
             }
         }
         out.append("Gleiche SSID: ").append(own).append(" | Andere SSIDs: ").append(foreign)
             .append(" | Verborgene: ").append(hidden).append("\n");
-        out.append("Gleiche SSID wird separat ausgewiesen; fremde/verborgene WLANs bestimmen den Vergleichsindex. Eigene Mesh-Funkmodule und versteckte SSIDs können die tatsächliche Belastung verändern.\n");
+        out.append("Gleiche SSID wird bei aktivierter Profiloption ausgeklammert. Versteckte SSIDs sind nicht sicher zuzuordnen. Der Index ist keine gemessene Auslastung.\n");
         int[] c24 = {1,6,11};
         int[] c5 = {36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140};
         out.append("\n2,4 GHz (20 MHz, Schätzung):\n");
@@ -470,8 +474,8 @@ public class MainActivity extends Activity {
         out.append("\n5 GHz (Kanalbreiten aus Scan-Daten, soweit verfügbar):\n");
         for (int ch : new int[]{36,40,44,48,100,104,108,112}) out.append("Kanal ").append(ch).append(": Belastungsindex ")
             .append(String.format(java.util.Locale.GERMANY, "%.1f", channelScore(external, ch, false))).append("\n");
-        out.append("Testkandidat (20 MHz): Kanal ").append(bestChannel(external, c5, false)).append("\n");
-        out.append("Bei 80-MHz-Betrieb sind mehrere benachbarte 20-MHz-Kanäle gemeinsam belegt. Die tatsächliche Deco-Kanalbreite bitte in der Deco-App prüfen.\n");
+        out.append("20-MHz-Orientierungswert: Kanal ").append(bestChannel(external, c5, false)).append("\n");
+        out.append("Bei 80/160 MHz sind mehrere 20-MHz-Kanäle gemeinsam belegt. Einzelkanal-Rankings reichen dafür nicht. Die Deco-Kanalbreite im Analyseprofil dokumentieren.\n");
         if (current != null) {
             int rssi = current.getRssi();
             if (rssi < -75) out.append("\nPRIORITÄT: Empfang schwach. Standort, Deco-Uplink und Roaming prüfen, bevor Kanäle verändert werden.\n");
@@ -480,11 +484,56 @@ public class MainActivity extends Activity {
         }
         out.append("\nDECO-SCHRITTE\n");
         out.append("1. In der TP-Link-Deco-App die Netzwerkoptimierung ausführen, falls verfügbar.\n");
-        out.append("2. Verbindung und Signal der fünf X1500 zum Mesh prüfen; besonders den Enpal-Deco im Keller.\n");
+        out.append("2. Verbindung und Signal der sechs X1500 zum Mesh prüfen; besonders den Enpal-Deco im Keller.\n");
         out.append("3. Bei Problemen Messungen am gleichen Ort vor und nach einer Änderung vergleichen.\n");
         out.append("4. Im Obergeschoss ohne eigenen Deco die Abdeckung und den verbundenen Zugangspunkt prüfen.\n");
         out.append("5. Keine Kanäle erzwingen, die das Deco-System nicht zur manuellen Auswahl anbietet.\n");
         out.append("\nWICHTIG: Der Index ist keine gemessene Auslastung. Kanalbreiten, DFS, verdeckte Stationen, Airtime und Funk-Backhaul werden nicht vollständig erfasst. Die App ändert keine Router-Einstellungen.\n");
+    }
+
+    private void showAnalysisProfile() {
+        SharedPreferences p = getSharedPreferences("analysis_profile", MODE_PRIVATE);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 8, 32, 8);
+        TextView hint = new TextView(this);
+        hint.setText("Nur lokale Dokumentation. Diese App verändert keine Deco-Einstellungen. Bitte die tatsächlichen Werte aus der Deco-App übernehmen.");
+        layout.addView(hint);
+        String[] options24 = {"20 MHz", "Automatisch", "40 MHz"};
+        Spinner w24 = new Spinner(this);
+        w24.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, options24));
+        w24.setSelection(Math.max(0, Arrays.asList(options24).indexOf(p.getString("w24", "20 MHz"))));
+        layout.addView(w24);
+        String[] options5 = {"160 MHz", "80 MHz"};
+        Spinner w5 = new Spinner(this);
+        w5.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, options5));
+        w5.setSelection(Math.max(0, Arrays.asList(options5).indexOf(p.getString("w5", "160 MHz"))));
+        layout.addView(w5);
+        CheckBox exclude = new CheckBox(this);
+        exclude.setText("Eigene SSID aus Fremdnetz-Schätzung ausklammern");
+        exclude.setChecked(p.getBoolean("exclude", true));
+        layout.addView(exclude);
+        new android.app.AlertDialog.Builder(this).setTitle("Deco-Analyseprofil")
+            .setView(layout).setNegativeButton("Abbrechen", null)
+            .setPositiveButton("Speichern", (d,w) -> {
+                p.edit().putString("w24", w24.getSelectedItem().toString())
+                    .putString("w5", w5.getSelectedItem().toString())
+                    .putBoolean("exclude", exclude.isChecked()).apply();
+                report.setText("Profil gespeichert: 2,4 GHz " + w24.getSelectedItem()
+                    + ", 5 GHz " + w5.getSelectedItem()
+                    + ".\\nKeine Router-Einstellungen geändert.");
+            }).show();
+    }
+
+    private List<ScanResult> externalNetworks(List<ScanResult> results, String ownSsid) {
+        if (!getSharedPreferences("analysis_profile", MODE_PRIVATE).getBoolean("exclude", true))
+            return new ArrayList<>(results);
+        List<ScanResult> external = new ArrayList<>();
+        for (ScanResult r : results) {
+            if (!ownSsid.isEmpty() && ownSsid.equals(r.SSID)) continue;
+            external.add(r);
+        }
+        return external;
     }
 
     private double channelScore(List<ScanResult> results, int candidate, boolean band24) {

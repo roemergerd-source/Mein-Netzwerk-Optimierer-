@@ -118,6 +118,17 @@ public class MainActivity extends Activity {
             report.setText("Bitte zuerst mit dem eigenen Deco-WLAN verbinden.");
             return;
         }
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        android.net.Network active = cm == null ? null : cm.getActiveNetwork();
+        android.net.NetworkCapabilities caps = active == null ? null : cm.getNetworkCapabilities(active);
+        if (caps == null || !caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)) {
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Deco-WLAN erforderlich")
+                .setMessage("Das Handy verwendet derzeit keine aktive WLAN-Verbindung. Bitte mobile Daten vorübergehend ausschalten, mit Netpolice verbinden und die Prüfung wiederholen. Ohne lokalen WLAN-Zugang ist ein negativer Port-Test nicht aussagekräftig.")
+                .setPositiveButton("WLAN-Einstellungen", (d, w) -> startActivity(new Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)))
+                .setNegativeButton("Schließen", null).show();
+            return;
+        }
         final android.widget.EditText address = new android.widget.EditText(this);
         address.setSingleLine(true);
         address.setInputType(android.text.InputType.TYPE_CLASS_PHONE);

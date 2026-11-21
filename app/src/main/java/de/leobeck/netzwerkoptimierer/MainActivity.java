@@ -2,6 +2,8 @@ package de.leobeck.netzwerkoptimierer;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.SharedPreferences;
+import java.text.DateFormat;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
@@ -65,6 +67,9 @@ public class MainActivity extends Activity {
         Button optimize = new Button(this);
         optimize.setText("Mesh bewerten und Optimierung planen");
         root.addView(optimize);
+        Button compare = new Button(this);
+        compare.setText("Etagen vergleichen");
+        root.addView(compare);
         Button settings = new Button(this);
         settings.setText("WLAN-Einstellungen öffnen");
         root.addView(settings);
@@ -88,6 +93,7 @@ public class MainActivity extends Activity {
             try { meshMode = true; checkAndAnalyze(); }
             catch (Throwable error) { showFailure("Mesh-Bewertung fehlgeschlagen", error); }
         });
+        compare.setOnClickListener(v -> showFloorComparison());
         settings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)));
     }
 
@@ -131,11 +137,13 @@ public class MainActivity extends Activity {
         WifiInfo current = wifi.getConnectionInfo();
         if (current != null) {
             out.append("Verbindung: ").append(current.getSSID()).append("\n");
+            out.append("Verbundener Zugangspunkt (BSSID): ").append(current.getBSSID()).append("\n");
             int rssi = current.getRssi();
             String rating = rssi >= -55 ? "Sehr gut" : rssi >= -67 ? "Gut" : rssi >= -75 ? "Mittel" : "Schwach";
             out.append("Signal: ").append(rssi).append(" dBm – ").append(rating).append("\n");
             out.append("Frequenz: ").append(current.getFrequency()).append(" MHz\n");
             out.append("Linkrate: ").append(current.getLinkSpeed()).append(" Mbit/s\n\n");
+            saveFloorMeasurement(floor, current);
         }
         // Android kann WLAN-Scans begrenzen; vorhandene Scanergebnisse sind nicht zwingend aktuell.
         boolean requested = wifi.startScan();
@@ -191,6 +199,53 @@ public class MainActivity extends Activity {
         out.append("5. Bei mehreren Funkstrecken kann die nutzbare Datenrate sinken. Wenn möglich, später kabelgebundenen Backhaul prüfen; Enpal-LAN ist kein Backhaul.\n");
         out.append("Gleiche SSID ist nur ein Hinweis, kein sicherer Nachweis für ein eigenes Deco-Gerät.\n");
         out.append("Hinweis: Diese App kann Deco-Einstellungen nicht selbst ändern und kann den Mesh-Backhaul nicht vollständig messen. Kanalvorschläge sind nur Testkandidaten.\n");
+        report.setText(out.toString());
+    }
+
+    @SuppressWarnings("deprecation")
+    private void saveFloorMeasurement(String floor, WifiInfo info) {
+        int rssi = info.getRssi();
+        if (rssi > 0 || rssi < -110 || info.getFrequency() <= 0) return;
+        SharedPreferences prefs = getSharedPreferences("floor_measurements", MODE_PRIVATE);
+        String key = floor + "_";
+        prefs.edit()
+            .putInt(key + "rssi", rssi)
+            .putInt(key + "rate", info.getLinkSpeed())
+            .putInt(key + "frequency", info.getFrequency())
+            .putString(key + "bssid", info.getBSSID())
+            .putLong(key + "time", System.currentTimeMillis())
+            .putInt(key + "count", prefs.getInt(key + "count", 0) + 1)
+            .apply();
+    }
+
+    private void showFloorComparison() {
+        SharedPreferences prefs = getSharedPreferences("floor_measurements", MODE_PRIVATE);
+        StringBuilder out = new StringBuilder("ETAGENVERGLEICH\\n\\n");
+        String[] floors = {"Keller", "Erdgeschoss", "Obergeschoss"};
+        String[] bssids = new String[floors.length];
+        for (int i = 0; i < floors.length; i++) {
+            String key = floors[i] + "_";
+            out.append(floors[i]).append("\\n");
+            if (!prefs.contains(key + "time")) {
+                out.append("Noch keine Messung gespeichert.\\n\\n");
+                continue;
+            }
+            int rssi = prefs.getInt(key + "rssi", -100);
+            String rating = rssi >= -55 ? "Sehr gut" : rssi >= -67 ? "Gut" : rssi >= -75 ? "Mittel" : "Schwach";
+            bssids[i] = prefs.getString(key + "bssid", "unbekannt");
+            out.append("Signal: ").append(rssi).append(" dBm (").append(rating).append(")\\n");
+            out.append("Linkrate: ").append(prefs.getInt(key + "rate", 0)).append(" Mbit/s\\n");
+            out.append("Frequenz: ").append(prefs.getInt(key + "frequency", 0)).append(" MHz\\n");
+            out.append("BSSID: ").append(bssids[i]).append("\\n");
+            out.append("Messungen: ").append(prefs.getInt(key + "count", 0)).append("\\n");
+            out.append("Letzte Messung: ").append(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(prefs.getLong(key + "time", 0)))).append("\\n\\n");
+        }
+        if (bssids[0] != null && bssids[1] != null && bssids[2] != null) {
+            Set<String> distinct = new HashSet<>(Arrays.asList(bssids));
+            out.append("Unterschiedliche verbundene BSSIDs: ").append(distinct.size()).append(" von 3 Messorten.\\n");
+            if (distinct.size() == 1) out.append("Alle drei Messungen zeigen denselben Zugangspunkt. Das kann auf fehlenden Wechsel des Handys zwischen Deco-Funkmodulen hindeuten.\\n");
+        }
+        out.append("\\nHinweis: Gespeichert wird jeweils die letzte Messung pro Etage, nicht der genaue Raum. Die Etage wird manuell ausgewählt. BSSID identifiziert ein Funkmodul, nicht zwingend ein ganzes Deco-Gerät. WLAN-Linkrate ist kein Internet-Speedtest.");
         report.setText(out.toString());
     }
 

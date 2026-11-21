@@ -130,11 +130,11 @@ public class MainActivity extends Activity {
             .setNegativeButton("Abbrechen", null)
             .setPositiveButton("Verbindung testen", (dialog, which) -> {
                 final String host = address.getText().toString().trim();
-                if (!host.matches("^(?:\\\\d{1,3}\\\\.){3}\\\\d{1,3}$")) {
+                if (!host.matches("^(?:\\d{1,3}\\.){3}\\d{1,3}$")) {
                     report.setText("Ungültige IPv4-Adresse. Bitte die IP des Haupt-Deco eingeben.");
                     return;
                 }
-                String[] octets = host.split("\\\\.");
+                String[] octets = host.split("\\.");
                 for (String octet : octets) {
                     if (Integer.parseInt(octet) > 255) {
                         report.setText("Ungültige IPv4-Adresse.");
